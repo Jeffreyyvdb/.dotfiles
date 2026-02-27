@@ -1,0 +1,1 @@
+/home/lab/.config/omarchy/current/theme/neovim.lua
