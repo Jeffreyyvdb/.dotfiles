@@ -1,2 +1,7 @@
+.DS_Store
+.gitconfig
+.git
+.gitignore
+
 .config/btop/themes/current.theme
 .config/nvim/lua/plugins/theme.lua
