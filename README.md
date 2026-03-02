@@ -154,3 +154,7 @@ cp ~/.zshrc ~/.zshrc.backup  # or ~/.bashrc
 stow -v .
 # Then create your .zshrc.local or .bashrc.local as needed
 ```
+
+### Shell / Terminal prompt.
+
+starship.rs used: install `curl -sS https://starship.rs/install.sh | sh`
