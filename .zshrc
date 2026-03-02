@@ -12,4 +12,6 @@ bindkey -e
 
 source ~/.config/shell/rc
 
+eval "$(starship init zsh)"
+
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
