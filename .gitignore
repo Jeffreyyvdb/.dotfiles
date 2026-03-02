@@ -2,3 +2,7 @@
 .history
 .local
 .cache
+
+# Machine-specific shell configs (not tracked)
+.zshrc.local
+.bashrc.local

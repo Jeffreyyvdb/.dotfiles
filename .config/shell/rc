@@ -1,0 +1,3 @@
+source ~/.config/shell/envs
+source ~/.config/shell/aliases
+source ~/.config/shell/functions

@@ -2,8 +2,10 @@
 .gitconfig
 .git
 .gitignore
-
-.README.md
+README.md
 
 .config/btop/themes/current.theme
 .config/nvim/lua/plugins/theme.lua
+
+.zshrc.local
+.bashrc.local
