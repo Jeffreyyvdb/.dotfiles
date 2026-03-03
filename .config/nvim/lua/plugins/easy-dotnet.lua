@@ -6,6 +6,12 @@ return {
     -- are highly recommended for a better experience
     -- dependencies = { "nvim-lua/plenary.nvim", "mfussenegger/nvim-dap", "nvim-telescope/telescope.nvim" },
     dependencies = {},
+    init = function()
+      -- Stub to prevent nvim 0.11 warning: "easy_dotnet does not have a configuration"
+      -- easy-dotnet reads vim.lsp.config["easy_dotnet"] before setting it on line 335 of roslyn/lsp.lua,
+      -- triggering the __index warning. Pre-seeding it here ensures the key exists before setup() runs.
+      vim.lsp.config["easy_dotnet"] = {}
+    end,
     config = function()
       local dotnet = require("easy-dotnet")
       -- Options are not required
