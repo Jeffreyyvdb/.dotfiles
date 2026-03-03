@@ -109,6 +109,20 @@ brew install bat
 sudo pacman -S bat
 ```
 
+### mise
+
+Version manager for multiple tools (dotnet, node, python, go, etc.). Automatically activates project-specific tool versions via `.mise.toml` files.
+
+```
+# macOS
+brew install mise
+
+# Arch Linux
+sudo pacman -S mise
+```
+
+Create `~/.config/mise/config.toml` with your default tools or stow from dotfiles.
+
 ## Shell Config Structure
 
 ```

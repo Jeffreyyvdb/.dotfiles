@@ -5,3 +5,4 @@ source ~/.config/shell/rc
 
 eval "$(starship init bash)"
 eval "$(zoxide init bash)"
+eval "$(mise activate bash)"
