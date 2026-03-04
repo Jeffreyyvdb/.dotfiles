@@ -2,6 +2,7 @@
 dotnet = "latest"
 node = "lts"
 python = "latest"
+tmux = "latest"
 
 [settings]
 experimental = true
