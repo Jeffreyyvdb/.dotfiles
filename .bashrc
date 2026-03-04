@@ -6,3 +6,6 @@ source ~/.config/shell/rc
 eval "$(starship init bash)"
 eval "$(zoxide init bash)"
 eval "$(mise activate bash)"
+
+# Override lazygit config directory (MacOS has different directory)
+export XDG_CONFIG_HOME="$HOME/.config"

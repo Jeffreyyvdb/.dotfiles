@@ -16,4 +16,7 @@ eval "$(starship init zsh)"
 eval "$(zoxide init zsh)"
 eval "$(mise activate zsh)"
 
+# Override lazygit config directory (MacOS has different directory)
+export XDG_CONFIG_HOME="$HOME/.config"
+
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
