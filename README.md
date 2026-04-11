@@ -1,6 +1,6 @@
 # .dotfiles
 
-Personal dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/) for macOS and Arch Linux.
+Personal dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/) for macOS, Ubuntu, and Arch Linux.
 
 ## What's Included
 
@@ -23,6 +23,9 @@ Personal dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/) fo
 ```bash
 # macOS
 brew install stow
+
+# Ubuntu
+sudo apt install -y stow
 
 # Arch Linux
 sudo pacman -S stow
@@ -52,6 +55,16 @@ These files are git-ignored and stow-ignored, so they stay local to each machine
 ```bash
 eval "$(/opt/homebrew/bin/brew shellenv)"
 [[ -f ~/.nvm/nvm.sh ]] && source ~/.nvm/nvm.sh
+```
+
+**Ubuntu** (`~/.bashrc.local`):
+
+```bash
+# ~/.local/bin holds fd/bat symlinks and the mise binary
+export PATH="$HOME/.local/bin:$PATH"
+
+# Activate mise
+eval "$($HOME/.local/bin/mise activate bash)"
 ```
 
 **Omarchy Linux** (`~/.bashrc.local`):
@@ -85,33 +98,83 @@ This installs dotnet, node, python, tmux, and Entire CLI as defined in `.config/
 
 These tools power the shell aliases, functions, and prompt. Without them the shell config will partially break or degrade.
 
-| Tool | macOS | Arch Linux | Purpose |
-|------|-------|------------|---------|
-| [fzf](https://github.com/junegunn/fzf) | `brew install fzf` | `sudo pacman -S fzf` | Fuzzy finder (`ff`, `Ctrl+R` history, Neovim `Space Space`) |
-| [zoxide](https://github.com/ajeetdsouza/zoxide) | `brew install zoxide` | `sudo pacman -S zoxide` | Smart `cd` replacement (remembers directories) |
-| [ripgrep](https://github.com/BurntSushi/ripgrep) | `brew install ripgrep` | `sudo pacman -S ripgrep` | Fast file content search (`rg`, Neovim `Space s g`) |
-| [eza](https://github.com/eza-community/eza) | `brew install eza` | `sudo pacman -S eza` | Modern `ls` with icons (`ls`, `lsa`, `lt`, `lta`) |
-| [fd](https://github.com/sharkdp/fd) | `brew install fd` | `sudo pacman -S fd` | Fast `find` replacement |
-| [bat](https://github.com/sharkdp/bat) | `brew install bat` | `sudo pacman -S bat` | `cat` with syntax highlighting (used by `ff` preview) |
-| [Starship](https://starship.rs) | `brew install starship` | `curl -sS https://starship.rs/install.sh \| sh` | Cross-shell prompt |
-| [mise](https://mise.jdx.dev) | `brew install mise` | `sudo pacman -S mise` | Multi-tool version manager (dotnet, node, python, etc.) |
-| [delta](https://github.com/dandavison/delta) | `brew install git-delta` | `sudo pacman -S git-delta` | Better git diffs (used by lazygit) |
+| Tool | macOS | Ubuntu | Arch Linux | Purpose |
+|------|-------|--------|------------|---------|
+| [fzf](https://github.com/junegunn/fzf) | `brew install fzf` | `sudo apt install fzf` | `sudo pacman -S fzf` | Fuzzy finder (`ff`, `Ctrl+R` history, Neovim `Space Space`) |
+| [zoxide](https://github.com/ajeetdsouza/zoxide) | `brew install zoxide` | `curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh \| sh` | `sudo pacman -S zoxide` | Smart `cd` replacement (remembers directories) |
+| [ripgrep](https://github.com/BurntSushi/ripgrep) | `brew install ripgrep` | `sudo apt install ripgrep` | `sudo pacman -S ripgrep` | Fast file content search (`rg`, Neovim `Space s g`) |
+| [eza](https://github.com/eza-community/eza) | `brew install eza` | See [eza Ubuntu install](#eza-ubuntu) | `sudo pacman -S eza` | Modern `ls` with icons (`ls`, `lsa`, `lt`, `lta`) |
+| [fd](https://github.com/sharkdp/fd) | `brew install fd` | `sudo apt install fd-find` ¹ | `sudo pacman -S fd` | Fast `find` replacement |
+| [bat](https://github.com/sharkdp/bat) | `brew install bat` | `sudo apt install bat` ¹ | `sudo pacman -S bat` | `cat` with syntax highlighting (used by `ff` preview) |
+| [Starship](https://starship.rs) | `brew install starship` | `curl -sS https://starship.rs/install.sh \| sh` | `curl -sS https://starship.rs/install.sh \| sh` | Cross-shell prompt |
+| [mise](https://mise.jdx.dev) | `brew install mise` | `curl https://mise.run \| sh` | `sudo pacman -S mise` | Multi-tool version manager (dotnet, node, python, etc.) |
+| [delta](https://github.com/dandavison/delta) | `brew install git-delta` | See [delta Ubuntu install](#delta-ubuntu) | `sudo pacman -S git-delta` | Better git diffs (used by lazygit) |
+
+> ¹ **Ubuntu name differences:** `fd` is packaged as `fd-find` (binary: `fdfind`) and `bat` as `batcat`. Add symlinks so the standard names work:
+> ```bash
+> mkdir -p ~/.local/bin
+> ln -sf $(which fdfind) ~/.local/bin/fd
+> ln -sf $(which batcat) ~/.local/bin/bat
+> ```
+
+#### eza (Ubuntu) {#eza-ubuntu}
+
+eza is not in the default Ubuntu repos. Install via the official deb repository:
+
+```bash
+sudo mkdir -p /etc/apt/keyrings
+wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc \
+  | sudo gpg --dearmor -o /etc/apt/keyrings/gierens.gpg
+echo "deb [signed-by=/etc/apt/keyrings/gierens.gpg] http://deb.gierens.de stable main" \
+  | sudo tee /etc/apt/sources.list.d/gierens.list
+sudo chmod 644 /etc/apt/keyrings/gierens.gpg /etc/apt/sources.list.d/gierens.list
+sudo apt update && sudo apt install -y eza
+```
+
+#### delta (Ubuntu) {#delta-ubuntu}
+
+```bash
+DELTA_VER=$(curl -s https://api.github.com/repos/dandavison/delta/releases/latest | grep tag_name | cut -d'"' -f4)
+curl -sLO "https://github.com/dandavison/delta/releases/download/${DELTA_VER}/git-delta_${DELTA_VER}_amd64.deb"
+sudo dpkg -i git-delta_${DELTA_VER}_amd64.deb
+rm git-delta_${DELTA_VER}_amd64.deb
+```
 
 ### Optional
 
 These tools have configs in the repo but the shell will work fine without them.
 
-| Tool | macOS | Arch Linux | Purpose |
-|------|-------|------------|---------|
-| [Neovim](https://neovim.io) | `brew install neovim` | `sudo pacman -S neovim` | Primary editor (LazyVim-based IDE) |
-| [tmux](https://github.com/tmux/tmux) | Managed by mise | Managed by mise | Terminal multiplexer |
-| [Lazygit](https://github.com/jesseduffield/lazygit) | `brew install lazygit` | `sudo pacman -S lazygit` | Git TUI (also available inside Neovim) |
-| [btop](https://github.com/aristocratos/btop) | `brew install btop` | `sudo pacman -S btop` | System monitor with vim keys |
-| [Alacritty](https://alacritty.org) | `brew install --cask alacritty` | `sudo pacman -S alacritty` | GPU-accelerated terminal |
-| [Ghostty](https://ghostty.org) | `brew install --cask ghostty` | See [Ghostty docs](https://ghostty.org/docs/install) | Terminal emulator |
-| [Docker](https://www.docker.com) | `brew install --cask docker` | `sudo pacman -S docker` | Container runtime (alias `d`) |
-| [ffmpeg](https://ffmpeg.org) | `brew install ffmpeg` | `sudo pacman -S ffmpeg` | Video transcoding functions |
-| [ImageMagick](https://imagemagick.org) | `brew install imagemagick` | `sudo pacman -S imagemagick` | Image conversion functions |
+| Tool | macOS | Ubuntu | Arch Linux | Purpose |
+|------|-------|--------|------------|---------|
+| [Neovim](https://neovim.io) | `brew install neovim` | See [Neovim Ubuntu install](#neovim-ubuntu) | `sudo pacman -S neovim` | Primary editor (LazyVim-based IDE) |
+| [tmux](https://github.com/tmux/tmux) | Managed by mise | Managed by mise | Managed by mise | Terminal multiplexer |
+| [Lazygit](https://github.com/jesseduffield/lazygit) | `brew install lazygit` | See [Lazygit Ubuntu install](#lazygit-ubuntu) | `sudo pacman -S lazygit` | Git TUI (also available inside Neovim) |
+| [btop](https://github.com/aristocratos/btop) | `brew install btop` | `sudo apt install btop` | `sudo pacman -S btop` | System monitor with vim keys |
+| [Alacritty](https://alacritty.org) | `brew install --cask alacritty` | `sudo apt install alacritty` | `sudo pacman -S alacritty` | GPU-accelerated terminal |
+| [Ghostty](https://ghostty.org) | `brew install --cask ghostty` | See [Ghostty docs](https://ghostty.org/docs/install) | See [Ghostty docs](https://ghostty.org/docs/install) | Terminal emulator |
+| [Docker](https://www.docker.com) | `brew install --cask docker` | See [Docker docs](https://docs.docker.com/engine/install/ubuntu/) | `sudo pacman -S docker` | Container runtime (alias `d`) |
+| [ffmpeg](https://ffmpeg.org) | `brew install ffmpeg` | `sudo apt install ffmpeg` | `sudo pacman -S ffmpeg` | Video transcoding functions |
+| [ImageMagick](https://imagemagick.org) | `brew install imagemagick` | `sudo apt install imagemagick` | `sudo pacman -S imagemagick` | Image conversion functions |
+
+#### Neovim (Ubuntu) {#neovim-ubuntu}
+
+Ubuntu's apt version is outdated. Install the latest via AppImage:
+
+```bash
+curl -sLO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.appimage
+chmod +x nvim-linux-x86_64.appimage
+sudo mv nvim-linux-x86_64.appimage /usr/local/bin/nvim
+```
+
+#### Lazygit (Ubuntu) {#lazygit-ubuntu}
+
+```bash
+LAZYGIT_VER=$(curl -s https://api.github.com/repos/jesseduffield/lazygit/releases/latest | grep tag_name | cut -d'"' -f4 | sed 's/v//')
+curl -sLo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VER}/lazygit_${LAZYGIT_VER}_Linux_x86_64.tar.gz"
+tar -xf lazygit.tar.gz lazygit
+sudo install lazygit /usr/local/bin/
+rm lazygit lazygit.tar.gz
+```
 
 ### .NET Development (Neovim)
 
@@ -124,6 +187,11 @@ dotnet tool install -g EasyDotnet
 # Debugger
 # macOS
 brew install netcoredbg
+
+# Ubuntu — install from GitHub releases
+NETCOREDBG_VER=$(curl -s https://api.github.com/repos/Samsung/netcoredbg/releases/latest | grep tag_name | cut -d'"' -f4)
+curl -sLo netcoredbg.tar.gz "https://github.com/Samsung/netcoredbg/releases/download/${NETCOREDBG_VER}/netcoredbg-linux-amd64.tar.gz"
+tar -xf netcoredbg.tar.gz && sudo mv netcoredbg /usr/local/bin/ && rm netcoredbg.tar.gz
 
 # Arch Linux (AUR)
 yay -S netcoredbg
@@ -186,6 +254,13 @@ Both terminal configs (Alacritty and Ghostty) expect **JetBrainsMono Nerd Font**
 ```bash
 # macOS
 brew install --cask font-jetbrains-mono-nerd-font
+
+# Ubuntu
+mkdir -p ~/.local/share/fonts
+curl -sLo /tmp/JetBrainsMono.tar.xz \
+  "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.tar.xz"
+tar -xf /tmp/JetBrainsMono.tar.xz -C ~/.local/share/fonts
+fc-cache -f
 
 # Arch Linux
 sudo pacman -S ttf-jetbrains-mono-nerd
