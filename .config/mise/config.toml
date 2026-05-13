@@ -1,7 +1,6 @@
 [tools]
 bun = "latest"
 dotnet = "latest"
-"github:entireio/cli" = "latest"
 node = "lts"
 pnpm = "latest"
 python = "latest"

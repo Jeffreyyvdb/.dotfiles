@@ -48,6 +48,43 @@
       "pluginName": "example-skills",
       "installedAt": "2026-04-15T09:47:49.986Z",
       "updatedAt": "2026-04-15T09:47:49.986Z"
+    },
+    "dokploy-ghcr-deploy": {
+      "source": "jeffreyyvdb/dokploy-ghcr-deploy",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/jeffreyyvdb/dokploy-ghcr-deploy.git",
+      "skillPath": "SKILL.md",
+      "skillFolderHash": "5df00bf5fc85643f1265f7fe48a69a5b8251116f",
+      "installedAt": "2026-04-20T07:50:09.184Z",
+      "updatedAt": "2026-04-20T15:36:29.076Z"
+    },
+    "umami-setup": {
+      "source": "Jeffreyyvdb/umami-setup",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/Jeffreyyvdb/umami-setup.git",
+      "skillPath": "SKILL.md",
+      "skillFolderHash": "47784ddfd4d4ef3d24f898c8b7c01670800a02fd",
+      "installedAt": "2026-04-21T21:03:41.528Z",
+      "updatedAt": "2026-04-21T21:03:41.528Z"
+    },
+    "seo-audit": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/coreyhaines31/marketingskills.git",
+      "skillPath": "skills/seo-audit/SKILL.md",
+      "skillFolderHash": "d333a589b3cd513296c419ee6911903be8c9865b",
+      "installedAt": "2026-04-24T09:54:43.474Z",
+      "updatedAt": "2026-04-24T09:54:43.474Z"
+    },
+    "ui-ux-pro-max": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git",
+      "skillPath": ".claude/skills/ui-ux-pro-max/SKILL.md",
+      "skillFolderHash": "75e1acaafe8b08e59d4b86fc253ac7873aff6bba",
+      "pluginName": "ui-ux-pro-max",
+      "installedAt": "2026-05-02T22:02:00.096Z",
+      "updatedAt": "2026-05-02T22:02:00.096Z"
     }
   },
   "dismissed": {

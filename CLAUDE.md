@@ -48,7 +48,7 @@ The shared config lives entirely in `.config/shell/`:
 
 ### mise-managed tools
 
-`.config/mise/config.toml` declares the tool versions. `mise install` installs them. Tools: `dotnet` (latest), `node` (lts), `python` (latest), `tmux` (latest), `github:entireio/cli` (latest). `experimental = true` is required for the GitHub plugin.
+`.config/mise/config.toml` declares the tool versions. `mise install` installs them. Tools: `bun` (latest), `dotnet` (latest), `node` (lts), `pnpm` (latest), `python` (latest), `tmux` (latest). `experimental = true` is on for any future GitHub plugins.
 
 ### Neovim
 
