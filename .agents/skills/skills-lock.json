@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "dokploy-ghcr-deploy": {
+      "source": "jeffreyyvdb/dokploy-ghcr-deploy",
+      "sourceType": "github",
+      "computedHash": "1e8a1aac9cb3d0a3ce2592e0226f53b4782fd2fe0cc033f0783bb43d0c9f67e1"
+    }
+  }
+}
