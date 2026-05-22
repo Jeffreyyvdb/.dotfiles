@@ -70,3 +70,12 @@ ln -sf $(which batcat) ~/.local/bin/bat
 ```
 
 `~/.bashrc.local` on Ubuntu should export `PATH="$HOME/.local/bin:$PATH"` and run `eval "$($HOME/.local/bin/mise activate bash)"` — mise is not in the system PATH otherwise.
+
+`btop` in the Ubuntu apt repos is outdated (stuck at 1.3.0). Install the latest release binary from GitHub instead:
+
+```bash
+curl -fsSL https://github.com/aristocratos/btop/releases/latest/download/btop-x86_64-unknown-linux-musl.tar.gz \
+  | tar -xz -C /tmp && cp /tmp/btop/bin/btop ~/.local/bin/btop && chmod +x ~/.local/bin/btop
+```
+
+The binary is statically linked (musl) and works on kernel 2.6.39+. No GPU support in the binary — acceptable since this machine has no NVIDIA/AMD GPU.
