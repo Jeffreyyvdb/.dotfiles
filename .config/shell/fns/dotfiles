@@ -1,0 +1,140 @@
+# dotfiles sync — auto-fetch on shell startup, never auto-commit.
+#
+# On startup (_dotfiles_autocheck, called from .config/shell/rc):
+#   - clean tree + behind remote  -> fast-forward apply + restow
+#   - uncommitted local changes   -> banner only, no merge (you decide)
+#   - diverged / unpushed         -> banner only
+#   - up to date                  -> silent
+# A throttled fetch runs in the background so the shell never blocks on the network.
+#
+# Manual command:
+#   dotfiles [status]  fetch now + show branch / ahead-behind / working changes
+#   dotfiles apply     fast-forward apply remote + restow, on demand
+#   dotfiles diff      show uncommitted local changes
+#
+# Override in ~/.zshrc.local / ~/.bashrc.local:
+#   DOTFILES_DIR             (default $HOME/.dotfiles)
+#   DOTFILES_FETCH_INTERVAL  seconds between background fetches (default 43200 = 12h)
+
+: "${DOTFILES_DIR:=$HOME/.dotfiles}"
+: "${DOTFILES_FETCH_INTERVAL:=43200}"
+
+_dotfiles_stamp() {
+  printf '%s/dotfiles/last-fetch' "${XDG_CACHE_HOME:-$HOME/.cache}"
+}
+
+# Throttled, backgrounded fetch. Refreshes origin/* for the *next* shell so the
+# current startup never waits on the network.
+_dotfiles_maybe_fetch() {
+  local stamp; stamp="$(_dotfiles_stamp)"
+  local now; now="$(date +%s)"
+  local last=0
+  [ -f "$stamp" ] && last="$(cat "$stamp" 2>/dev/null || echo 0)"
+
+  if [ "$((now - last))" -lt "$DOTFILES_FETCH_INTERVAL" ]; then
+    return 0
+  fi
+
+  mkdir -p "$(dirname "$stamp")"
+  printf '%s' "$now" >"$stamp"
+  ( git -C "$DOTFILES_DIR" fetch -q origin >/dev/null 2>&1 & ) >/dev/null 2>&1
+}
+
+# Colored line to stderr, plain when not a tty.
+_dotfiles_say() {
+  local color="$1"; shift
+  if [ -t 2 ]; then
+    printf '\033[%sm%s\033[0m\n' "$color" "$*" >&2
+  else
+    printf '%s\n' "$*" >&2
+  fi
+}
+
+# Runs on every interactive shell startup. Cheap: only local git plumbing,
+# plus a throttled background fetch.
+_dotfiles_autocheck() {
+  [ -d "$DOTFILES_DIR/.git" ] || return 0
+
+  _dotfiles_maybe_fetch
+
+  local upstream
+  upstream="$(git -C "$DOTFILES_DIR" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null)" || return 0
+  [ -n "$upstream" ] || return 0
+
+  local porcelain
+  porcelain="$(git -C "$DOTFILES_DIR" status --porcelain 2>/dev/null)"
+
+  local behind ahead
+  behind="$(git -C "$DOTFILES_DIR" rev-list --count "HEAD..$upstream" 2>/dev/null || echo 0)"
+  ahead="$(git -C "$DOTFILES_DIR" rev-list --count "$upstream..HEAD" 2>/dev/null || echo 0)"
+
+  if [ -n "$porcelain" ]; then
+    local count; count="$(printf '%s\n' "$porcelain" | grep -c .)"
+    local header="⚠ dotfiles: $count local change(s)"
+    [ "$behind" -gt 0 ] && header="$header (+$behind remote commit(s) waiting)"
+    _dotfiles_say 33 "$header"
+    printf '%s\n' "$porcelain" | head -10 | sed 's/^/    /' >&2
+    [ "$count" -gt 10 ] && printf '    … and %s more\n' "$((count - 10))" >&2
+    return 0
+  fi
+
+  if [ "$behind" -gt 0 ] && [ "$ahead" -eq 0 ]; then
+    if git -C "$DOTFILES_DIR" merge --ff-only "$upstream" >/dev/null 2>&1; then
+      ( cd "$DOTFILES_DIR" && stow --restow . >/dev/null 2>&1 )
+      _dotfiles_say 32 "✓ dotfiles: applied $behind remote commit(s)"
+    else
+      _dotfiles_say 33 "⚠ dotfiles: $behind remote commit(s) could not fast-forward"
+    fi
+    return 0
+  fi
+
+  if [ "$behind" -gt 0 ] && [ "$ahead" -gt 0 ]; then
+    _dotfiles_say 33 "⚠ dotfiles: diverged ($behind behind, $ahead ahead)"
+    return 0
+  fi
+
+  if [ "$ahead" -gt 0 ]; then
+    _dotfiles_say 90 "ℹ dotfiles: $ahead unpushed commit(s)"
+  fi
+}
+
+dotfiles() {
+  local repo="$DOTFILES_DIR"
+
+  case "${1:-status}" in
+    status|st)
+      ( cd "$repo" || return 1
+        git fetch -q origin >/dev/null 2>&1
+        git status -sb
+        local up; up="$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null)"
+        if [ -n "$up" ]; then
+          printf 'behind %s, ahead %s\n' \
+            "$(git rev-list --count HEAD.."$up" 2>/dev/null || echo 0)" \
+            "$(git rev-list --count "$up"..HEAD 2>/dev/null || echo 0)"
+        fi
+      )
+      ;;
+    apply|a)
+      ( cd "$repo" || return 1
+        git fetch -q origin >/dev/null 2>&1
+        local up; up="$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null)"
+        if [ -z "$up" ]; then echo "no upstream configured"; return 1; fi
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "✗ local changes present — review with 'dotfiles diff' first"; return 1
+        fi
+        if git merge --ff-only "$up" >/dev/null 2>&1; then
+          stow --restow . >/dev/null 2>&1
+          echo "✓ applied + restowed"
+        else
+          echo "✗ not a fast-forward — diverged, resolve manually"; return 1
+        fi
+      )
+      ;;
+    diff|d)
+      ( cd "$repo" || return 1; git status -s; git diff )
+      ;;
+    *)
+      echo "usage: dotfiles [status|apply|diff]"
+      ;;
+  esac
+}
