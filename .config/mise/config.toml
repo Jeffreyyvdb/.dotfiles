@@ -5,6 +5,7 @@ node = "lts"
 pnpm = "latest"
 python = "latest"
 tmux = "latest"
+uv = "latest"
 
 [settings]
 experimental = true
