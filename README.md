@@ -2,6 +2,8 @@
 
 Personal dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/) for macOS, Ubuntu, and Arch Linux.
 
+The tool choices and config here are largely based on [Omarchy Linux](https://omarchy.org/) — this repo carries that setup across machines that don't run Omarchy (work/personal Macs and Ubuntu servers).
+
 ## What's Included
 
 | Category | Tools |
@@ -265,3 +267,7 @@ fc-cache -f
 # Arch Linux
 sudo pacman -S ttf-jetbrains-mono-nerd
 ```
+
+## License
+
+[MIT](LICENSE). The AI agent skills under `.agents/skills/` and `.claude/skills/` are third-party and retain their own licenses; see `.agents/skills/skills-lock.json` for their upstream sources.

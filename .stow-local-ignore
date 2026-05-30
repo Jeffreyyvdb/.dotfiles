@@ -4,6 +4,7 @@
 .gitignore
 README.md
 CLAUDE.md
+LICENSE
 
 .config/btop/themes/current.theme
 .config/nvim/lua/plugins/theme.lua
