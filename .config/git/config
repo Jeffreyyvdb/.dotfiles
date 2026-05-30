@@ -1,5 +1,8 @@
 # See https://git-scm.com/docs/git-config
 
+[user]
+	name = Jeffreyyvdb
+	email = 60582071+Jeffreyyvdb@users.noreply.github.com
 [alias]
 	co = checkout
 	br = branch
