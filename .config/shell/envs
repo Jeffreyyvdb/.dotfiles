@@ -1,3 +1,8 @@
 export EDITOR=nvim
 export SUDO_EDITOR="$EDITOR"
 export BAT_THEME=ansi
+
+# Aspire CLI (installed per-machine via https://aspire.dev/install.sh to
+# ~/.aspire/bin). Wired here so both zsh (macOS) and bash (Linux) resolve it;
+# harmless when Aspire isn't installed on a given machine.
+export PATH="$HOME/.aspire/bin:$PATH"
