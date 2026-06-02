@@ -13,6 +13,8 @@
 #   dotfiles diff      show uncommitted local changes
 #
 # Override in ~/.zshrc.local / ~/.bashrc.local:
+#   DOTFILES_AUTO_SYNC       set 0 to disable startup fetch/apply entirely; the
+#                            manual `dotfiles` command still works (default 1)
 #   DOTFILES_DIR             (default $HOME/.dotfiles)
 #   DOTFILES_FETCH_INTERVAL  seconds between background fetches (default 43200 = 12h)
 
