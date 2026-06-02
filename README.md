@@ -4,6 +4,30 @@ Personal dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/) fo
 
 The tool choices and config here are largely based on [Omarchy Linux](https://omarchy.org/) — this repo carries that setup across machines that don't run Omarchy (work/personal Macs and Ubuntu servers).
 
+## Implement with an Agent
+
+Don't want to follow the steps by hand? Hand the whole thing to an AI agent (Claude Code, etc.). Paste a prompt like this:
+
+```text
+Install my dotfiles from git@github.com:Jeffreyyvdb/.dotfiles.git.
+
+Read the repo's README first, then:
+1. Install GNU Stow for my OS.
+2. Clone the repo to ~/.dotfiles.
+3. Back up any conflicting ~/.zshrc / ~/.bashrc before stowing.
+4. Create the machine-specific ~/.zshrc.local (macOS) or ~/.bashrc.local (Linux)
+   exactly as the README's "Create machine-specific local config" step describes.
+5. Run `stow -v .` from ~/.dotfiles.
+6. Install the Required dependencies for my OS from the Dependencies tables.
+7. Run `mise install`.
+
+Tell me before overwriting anything, and stop if something conflicts.
+Note: this repo auto-syncs from git on every new shell — if I don't want that,
+set `export DOTFILES_AUTO_SYNC=0` in my local rc (see the Dotfiles Sync section).
+```
+
+The agent should work through the OS-specific tables below rather than guessing package names. Everything it does maps to the manual [Quick Start](#quick-start) steps, so you can review each one.
+
 ## What's Included
 
 | Category | Tools |
@@ -248,6 +272,46 @@ The `.bashrc` and `.zshrc` source `.*.local` files **before** the shared config,
 
 - `.zshrc.local` / `.bashrc.local` are **git-ignored** and **stow-ignored**
 - Each machine can set up Homebrew paths, nvm, or Omarchy defaults without affecting the shared repo
+- They are sourced **before** the shared config, so any override below (`DOTFILES_*`, etc.) takes effect
+
+## Dotfiles Sync
+
+Every interactive shell keeps this repo in sync with the remote automatically (defined in `.config/shell/fns/dotfiles`). The goal is that opening a terminal on any machine pulls in the latest committed config without you remembering to `git pull` and `stow`.
+
+**On startup it:**
+
+- Runs a **throttled background `git fetch`** (never blocks the shell on the network — the result is used by the *next* shell).
+- If the working tree is **clean and behind** the remote → **fast-forwards and runs `stow --restow .`** automatically, then prints `✓ dotfiles: applied N remote commit(s)`.
+- If you have **uncommitted local changes** → prints a banner listing them and does **nothing else** (never auto-merges over your work).
+- If the branch has **diverged** or has **unpushed commits** → prints a banner only.
+- If **up to date** → silent.
+
+It **never auto-commits and never auto-pushes** — only fast-forwards a clean tree.
+
+**Manual command** (works regardless of the auto-sync setting):
+
+| Command | Does |
+|---------|------|
+| `dotfiles status` | Fetch + show branch and ahead/behind counts |
+| `dotfiles apply` | Fast-forward the remote + restow, on demand |
+| `dotfiles diff` | Show uncommitted local changes |
+
+### Turning it off / tuning
+
+Set these in `~/.zshrc.local` / `~/.bashrc.local` (sourced before the shared config):
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `DOTFILES_AUTO_SYNC` | `1` | Set `0` to disable the startup fetch/apply entirely. The manual `dotfiles` command still works. |
+| `DOTFILES_FETCH_INTERVAL` | `43200` | Seconds between background fetches (12h). |
+| `DOTFILES_DIR` | `$HOME/.dotfiles` | Repo location. |
+
+To opt out completely:
+
+```bash
+# ~/.zshrc.local (macOS) or ~/.bashrc.local (Linux)
+export DOTFILES_AUTO_SYNC=0
+```
 
 ## Fonts
 
