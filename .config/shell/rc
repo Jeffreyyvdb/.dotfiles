@@ -2,4 +2,4 @@ source ~/.config/shell/envs
 source ~/.config/shell/aliases
 source ~/.config/shell/functions
 
-_dotfiles_autocheck
+[ "${DOTFILES_AUTO_SYNC:-1}" != "0" ] && _dotfiles_autocheck
