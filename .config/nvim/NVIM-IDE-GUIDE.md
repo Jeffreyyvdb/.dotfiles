@@ -301,17 +301,17 @@ Your config includes 14 colorschemes and the omarchy hot-reload system. To switc
 
 ```bash
 # From the terminal (outside Neovim)
-omarchy-theme-set catppuccin
-omarchy-theme-set tokyo-night
-omarchy-theme-set nord
-omarchy-theme-set gruvbox
-omarchy-theme-set kanagawa
-omarchy-theme-set rose-pine
-omarchy-theme-set everforest
-omarchy-theme-set hackerman
-omarchy-theme-set ethereal
-omarchy-theme-set matte-black
-omarchy-theme-set flexoki-light
+omarchy theme set catppuccin
+omarchy theme set tokyo-night
+omarchy theme set nord
+omarchy theme set gruvbox
+omarchy theme set kanagawa
+omarchy theme set rose-pine
+omarchy theme set everforest
+omarchy theme set hackerman
+omarchy theme set ethereal
+omarchy theme set matte-black
+omarchy theme set flexoki-light
 ```
 
 This changes the theme across your entire system (terminal, Hyprland, Neovim, VS Code, Waybar). Neovim picks up the change via the hot-reload plugin.
