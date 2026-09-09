@@ -12,3 +12,6 @@
 
 # Python bytecode
 __pycache__/
+
+# Omarchy theme symlink (absolute path, regenerated per machine)
+.config/btop/themes/current.theme
