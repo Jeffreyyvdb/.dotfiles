@@ -1,6 +1,9 @@
 [tools]
 bun = "latest"
+claude = "latest"
+codex = "latest"
 dotnet = "latest"
+gh = "latest"
 node = "lts"
 pnpm = "latest"
 python = "latest"
@@ -9,3 +12,6 @@ uv = "latest"
 
 [settings]
 experimental = true
+
+[settings.upgrade]
+auto_prune = false
