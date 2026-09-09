@@ -60,6 +60,15 @@ The shared config lives entirely in `.config/shell/`:
 
 `lazy-lock.json` pins plugin versions — commit changes to it when intentionally upgrading plugins.
 
+### btop
+
+`.config/btop/btop.conf` is hand-edited and `save_config_on_exit = false` **on purpose**. Do not flip
+it back. `~/.config/btop` is a stow symlink into this repo, so with saving on, btop rewrote the tracked
+file on every exit using the schema for whatever hardware it was running on — the config ping-ponged
+between machines (the Mac adding GPU keys, a no-GPU Linux box stripping them and adding the Linux-only
+`freq_mode`, `shown_gpus` differing by platform). If a btop.conf diff shows up unasked, it is that churn
+returning, not a real change — revert it rather than committing it.
+
 ## Ubuntu-specific notes
 
 `fd` and `bat` are packaged as `fd-find`/`fdfind` and `batcat` on Ubuntu. Symlinks are needed:
