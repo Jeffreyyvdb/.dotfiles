@@ -69,6 +69,36 @@ between machines (the Mac adding GPU keys, a no-GPU Linux box stripping them and
 `freq_mode`, `shown_gpus` differing by platform). If a btop.conf diff shows up unasked, it is that churn
 returning, not a real change — revert it rather than committing it.
 
+### Agent CLI dirs (.claude, .codex, .agents)
+
+Skills live once in `.agents/skills/` and are surfaced to each agent CLI by symlink, so only
+`.agents/` holds real files. `.claude/skills/*` and `.codex/skills/*` are tracked symlinks pointing
+at `../../.agents/skills/<name>`.
+
+The two CLIs fold at different depths **on purpose**:
+
+- `~/.claude` is a real dir; `~/.claude/skills` is a stow symlink onto this repo's `.claude/skills`.
+  Claude Code writes no runtime state into `skills/`, so the repo can own that whole directory.
+- `~/.codex` and `~/.codex/skills` are both **real dirs**, with only the leaves (`nvim`, `ralph`)
+  symlinked in. Codex regenerates `skills/.system/` on startup, so a folded `skills` dir would drag
+  those back into the repo.
+
+`~/.codex` must never become a single symlink into this repo. It was one until 2026-09-12, which meant
+Codex wrote its whole state — live OAuth tokens in `auth.json`, `memories/logs/state` sqlite dbs
+carrying session content from every repo, and ~135MB of `.tmp`/`plugins`/`cache` — straight into the
+working tree of a public repo. Nothing sensitive ever got committed; the state now lives in a real
+`~/.codex` and `.gitignore` whitelists only the two skill symlinks.
+
+Stow folds a directory into one symlink when the target does not exist, so on a **fresh machine create
+the dirs before stowing** or the whole problem comes back:
+
+```bash
+mkdir -p ~/.codex/skills ~/.claude
+cd ~/.dotfiles && stow -v .
+```
+
+Do not add `.codex` to `.stow-local-ignore` — that would stop the skill symlinks being linked at all.
+
 ## Ubuntu-specific notes
 
 `fd` and `bat` are packaged as `fd-find`/`fdfind` and `batcat` on Ubuntu. Symlinks are needed:
