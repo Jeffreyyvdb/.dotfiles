@@ -15,3 +15,13 @@ __pycache__/
 
 # Omarchy theme symlink (absolute path, regenerated per machine)
 .config/btop/themes/current.theme
+
+# Codex CLI runtime state. ~/.codex must be a REAL directory, not a stow-folded
+# symlink into this repo — otherwise Codex writes auth tokens, session sqlite
+# dbs and ~135MB of cache straight into the working tree. Only the two skill
+# symlinks below are tracked; everything else under .codex/ is machine state.
+.codex/*
+!.codex/skills/
+.codex/skills/*
+!.codex/skills/nvim
+!.codex/skills/ralph
