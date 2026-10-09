@@ -25,3 +25,8 @@ __pycache__/
 .codex/skills/*
 !.codex/skills/nvim
 !.codex/skills/ralph
+
+# Claude Code syncs the account's skills into skills/synced/ at runtime (~10MB,
+# rewritten on every sync, bucket dir named after account ids). ~/.claude/skills
+# is a stow symlink onto this repo, so it lands here — machine state, not config.
+.claude/skills/synced/

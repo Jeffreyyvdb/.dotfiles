@@ -78,7 +78,10 @@ at `../../.agents/skills/<name>`.
 The two CLIs fold at different depths **on purpose**:
 
 - `~/.claude` is a real dir; `~/.claude/skills` is a stow symlink onto this repo's `.claude/skills`.
-  Claude Code writes no runtime state into `skills/`, so the repo can own that whole directory.
+  The only runtime state Claude Code writes into `skills/` is `skills/synced/` — a cache of the
+  account's synced skills (~10MB, rewritten on every sync) — which is gitignored, so the repo can
+  still own the rest of that directory. If `.claude/skills/synced/` shows up as untracked, the ignore
+  rule has gone missing; do not commit it.
 - `~/.codex` and `~/.codex/skills` are both **real dirs**, with only the leaves (`nvim`, `ralph`)
   symlinked in. Codex regenerates `skills/.system/` on startup, so a folded `skills` dir would drag
   those back into the repo.
