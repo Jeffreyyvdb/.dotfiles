@@ -6,6 +6,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A personal dotfiles repo managed with **GNU Stow**. Stow symlinks everything from `~/.dotfiles` into `~` — editing a file here immediately affects the live config. There is no build step.
 
+## This repo is public
+
+`github.com/Jeffreyyvdb/.dotfiles` is a **public** GitHub repo. Everything committed — including
+history, deleted files and commit metadata — is readable by anyone. Before staging anything, check
+that it contains none of:
+
+- Credentials of any kind: API keys, tokens, passwords, OAuth/auth files, SSH or GPG keys, `.env` files
+- Employer or client details: work email, company names, internal hostnames, repo or project names
+- Private infrastructure: server IPs, internal domains, SSH host aliases, VPN or network layout
+- Personal data: private email addresses, phone numbers, home paths that reveal other usernames
+- Agent/CLI runtime state: session logs, memories, caches, sqlite dbs (see the `.codex` notes below)
+
+Machine-specific or sensitive values belong in `~/.zshrc.local` / `~/.bashrc.local` or another
+stow-ignored, git-ignored file — never in a tracked file. Commits must use the GitHub noreply
+address (set in `.config/git/config`), not a personal or work email. If something sensitive has
+already been committed, say so rather than quietly deleting it: removing it from the tree does not
+remove it from history.
+
 ## Applying changes
 
 ```bash
@@ -23,7 +41,7 @@ mise install
 ## Stow rules
 
 - `stow -v .` run from `~/.dotfiles` creates symlinks in `~`, mirroring the directory structure here.
-- Files listed in `.stow-local-ignore` are **never** symlinked: `.git`, `.gitignore`, `README.md`, `CLAUDE.md`, `.gitconfig`, `.bashrc.local`, `.zshrc.local`, and two machine-specific theme files.
+- Files listed in `.stow-local-ignore` are **never** symlinked: `.git`, `.gitignore`, `README.md`, `CLAUDE.md`, `AGENTS.md`, `.gitconfig`, `.bashrc.local`, `.zshrc.local`, and two machine-specific theme files.
 - To stop tracking a file: add it to `.stow-local-ignore`, then run `stow -D . && stow .` to re-apply.
 
 ## Architecture

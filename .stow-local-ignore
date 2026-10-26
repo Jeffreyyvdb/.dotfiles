@@ -4,6 +4,7 @@
 .gitignore
 README.md
 CLAUDE.md
+AGENTS.md
 LICENSE
 
 .config/btop/themes/current.theme
