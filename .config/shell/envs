@@ -6,3 +6,7 @@ export BAT_THEME=ansi
 # ~/.aspire/bin). Wired here so both zsh (macOS) and bash (Linux) resolve it;
 # harmless when Aspire isn't installed on a given machine.
 export PATH="$HOME/.aspire/bin:$PATH"
+
+# opencode: machine-specific settings (e.g. server.cors with a private hostname)
+# live in an untracked ~/.config/opencode/local.json, merged over the global config.
+[ -f "$HOME/.config/opencode/local.json" ] && export OPENCODE_CONFIG="$HOME/.config/opencode/local.json"
