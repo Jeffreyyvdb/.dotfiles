@@ -30,3 +30,14 @@ __pycache__/
 # rewritten on every sync, bucket dir named after account ids). ~/.claude/skills
 # is a stow symlink onto this repo, so it lands here — machine state, not config.
 .claude/skills/synced/
+
+# Claude Code also syncs account skills into ~/.agents/skills/synced/, and ~/.agents
+# is a stow-folded symlink onto this repo — same runtime cache, second location.
+.agents/skills/synced/
+
+# opencode runtime state and machine config. ~/.config/opencode is a stow-folded
+# symlink, so these land in the repo: service.json holds the server password,
+# local.json the private server.cors hostname (see .config/shell/envs).
+.config/opencode/cli.json
+.config/opencode/service.json
+.config/opencode/local.json
