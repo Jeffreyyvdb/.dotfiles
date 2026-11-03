@@ -12,6 +12,7 @@ uv = "latest"
 
 [settings]
 experimental = true
+minimum_release_age = "24h"
 
 [settings.upgrade]
 auto_prune = false

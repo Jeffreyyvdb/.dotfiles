@@ -68,6 +68,16 @@ The shared config lives entirely in `.config/shell/`:
 
 `.config/mise/config.toml` declares the tool versions. `mise install` installs them. Tools: `bun` (latest), `dotnet` (latest), `node` (lts), `pnpm` (latest), `python` (latest), `tmux` (latest). `experimental = true` is on for any future GitHub plugins.
 
+### Minimum release age (supply-chain cooldown)
+
+Package managers refuse releases younger than 24h, so a compromised publish has time to be caught
+before it lands here. Tracked: mise (`minimum_release_age` in `.config/mise/config.toml`), uv
+(`exclude-newer` in `.config/uv/uv.toml`), bun (`minimumReleaseAge` in `.bunfig.toml`, seconds).
+Not tracked because their files can hold registry tokens: npm (`min-release-age=1` in `~/.npmrc`,
+days) and pnpm (`minimumReleaseAge: 1440` in `~/.config/pnpm/config.yaml`, minutes) — on a new
+machine run `npm config set min-release-age 1` and `pnpm config set -g minimumReleaseAge 1440`.
+Homebrew has no equivalent; hold fresh formulae back with `brew pin`.
+
 ### Neovim
 
 `.config/nvim/` is a LazyVim-based setup. Plugin specs live in `lua/plugins/`. Notable plugins:
