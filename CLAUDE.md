@@ -110,15 +110,21 @@ The two CLIs fold at different depths **on purpose**:
   account's synced skills (~10MB, rewritten on every sync) — which is gitignored, so the repo can
   still own the rest of that directory. If `.claude/skills/synced/` shows up as untracked, the ignore
   rule has gone missing; do not commit it.
-- `~/.codex` and `~/.codex/skills` are both **real dirs**, with only the leaves (`nvim`, `ralph`)
-  symlinked in. Codex regenerates `skills/.system/` on startup, so a folded `skills` dir would drag
-  those back into the repo.
+- `~/.codex` and `~/.codex/skills` are both **real dirs**, with only the leaves (`nvim`, `ralph`,
+  the tstack skills) symlinked in. Codex regenerates `skills/.system/` on startup, so a folded
+  `skills` dir would drag those back into the repo. Each Codex skill symlink needs its own
+  `!.codex/skills/<name>` line in `.gitignore`, or it stays untracked.
+
+The tstack skills (`babysit-pr`, `council`, `file-pr`, `full-send`, `full-stop`,
+`leaving-pr-comments`, `modernize`, `sol-loop`, `takeover`) are vendored copies of
+`github.com/t3dotgg/tstack` (commit `11e37a7`). To update, re-copy `tstack/skills/*` over
+`.agents/skills/` and review the diff.
 
 `~/.codex` must never become a single symlink into this repo. It was one until 2026-09-12, which meant
 Codex wrote its whole state — live OAuth tokens in `auth.json`, `memories/logs/state` sqlite dbs
 carrying session content from every repo, and ~135MB of `.tmp`/`plugins`/`cache` — straight into the
 working tree of a public repo. Nothing sensitive ever got committed; the state now lives in a real
-`~/.codex` and `.gitignore` whitelists only the two skill symlinks.
+`~/.codex` and `.gitignore` whitelists only the skill symlinks.
 
 Stow folds a directory into one symlink when the target does not exist, so on a **fresh machine create
 the dirs before stowing** or the whole problem comes back:

@@ -18,13 +18,23 @@ __pycache__/
 
 # Codex CLI runtime state. ~/.codex must be a REAL directory, not a stow-folded
 # symlink into this repo — otherwise Codex writes auth tokens, session sqlite
-# dbs and ~135MB of cache straight into the working tree. Only the two skill
+# dbs and ~135MB of cache straight into the working tree. Only the skill
 # symlinks below are tracked; everything else under .codex/ is machine state.
 .codex/*
 !.codex/skills/
 .codex/skills/*
 !.codex/skills/nvim
 !.codex/skills/ralph
+# tstack skills (github.com/t3dotgg/tstack)
+!.codex/skills/babysit-pr
+!.codex/skills/council
+!.codex/skills/file-pr
+!.codex/skills/full-send
+!.codex/skills/full-stop
+!.codex/skills/leaving-pr-comments
+!.codex/skills/modernize
+!.codex/skills/sol-loop
+!.codex/skills/takeover
 
 # Claude Code syncs the account's skills into skills/synced/ at runtime (~10MB,
 # rewritten on every sync, bucket dir named after account ids). ~/.claude/skills
