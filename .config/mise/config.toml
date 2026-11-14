@@ -9,6 +9,9 @@ pnpm = "latest"
 python = "latest"
 tmux = "latest"
 uv = "latest"
+"npm:defuddle" = "latest"
+"npm:knap" = "latest"
+"npm:obsidian-headless" = "latest"
 
 [settings]
 experimental = true
