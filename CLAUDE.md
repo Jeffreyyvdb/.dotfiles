@@ -66,7 +66,7 @@ The shared config lives entirely in `.config/shell/`:
 
 ### mise-managed tools
 
-`.config/mise/config.toml` declares the tool versions. `mise install` installs them. Tools: `bun` (latest), `dotnet` (latest), `node` (lts), `pnpm` (latest), `python` (latest), `tmux` (latest). `experimental = true` is on for any future GitHub plugins.
+`.config/mise/config.toml` declares the tool versions. `mise install` installs them. Tools: `bun` (latest), `dotnet` (latest), `node` (lts), `pnpm` (latest), `python` (latest), `tmux` (latest), and the npm CLIs `defuddle` (web page → clean Markdown), `knap` (Markdown templates from JSON/CSV) and `obsidian-headless` (`ob`: Obsidian Sync/Publish without the desktop app), used by the Obsidian agent skills. `experimental = true` is on for any future GitHub plugins.
 
 ### Minimum release age (supply-chain cooldown)
 

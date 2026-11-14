@@ -234,6 +234,9 @@ These tools are auto-installed when you run `mise install`:
 | python | latest |
 | tmux | latest |
 | [Entire CLI](https://entire.io) | latest |
+| [defuddle](https://github.com/kepano/defuddle) (npm) | latest |
+| [knap](https://github.com/obsidianmd/knap) (npm) | latest |
+| [obsidian-headless](https://help.obsidian.md/headless) (npm, `ob`) | latest |
 
 ## Shell Config Structure
 
