@@ -41,7 +41,7 @@ mise install
 ## Stow rules
 
 - `stow -v .` run from `~/.dotfiles` creates symlinks in `~`, mirroring the directory structure here.
-- Files listed in `.stow-local-ignore` are **never** symlinked: `.git`, `.gitignore`, `README.md`, the root `CLAUDE.md` and `AGENTS.md`, `.gitconfig`, `.bashrc.local`, `.zshrc.local`, `.agents/.skill-lock.json`, and two machine-specific theme files.
+- Files listed in `.stow-local-ignore` are **never** symlinked: `.git`, `.gitignore`, `README.md`, the root `CLAUDE.md` and `AGENTS.md`, `.claude/settings.local.json` (Claude Code's per-project permissions for sessions run inside this repo), `.gitconfig`, `.bashrc.local`, `.zshrc.local`, `.agents/.skill-lock.json`, and two machine-specific theme files.
 - An ignore entry without a `/` matches that **basename at any depth**. `CLAUDE.md` and `AGENTS.md` are therefore anchored (`^/CLAUDE\.md`), so this repo's own instructions stay out of `~` while `.claude/CLAUDE.md` is still linked.
 - To stop tracking a file: add it to `.stow-local-ignore`, then run `stow -D . && stow .` to re-apply.
 

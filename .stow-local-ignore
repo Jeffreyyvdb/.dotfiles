@@ -5,6 +5,7 @@
 README.md
 ^/CLAUDE\.md
 ^/AGENTS\.md
+^/\.claude/settings\.local\.json
 LICENSE
 
 .config/btop/themes/current.theme
