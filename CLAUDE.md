@@ -41,7 +41,8 @@ mise install
 ## Stow rules
 
 - `stow -v .` run from `~/.dotfiles` creates symlinks in `~`, mirroring the directory structure here.
-- Files listed in `.stow-local-ignore` are **never** symlinked: `.git`, `.gitignore`, `README.md`, `CLAUDE.md`, `AGENTS.md`, `.gitconfig`, `.bashrc.local`, `.zshrc.local`, and two machine-specific theme files.
+- Files listed in `.stow-local-ignore` are **never** symlinked: `.git`, `.gitignore`, `README.md`, the root `CLAUDE.md` and `AGENTS.md`, `.gitconfig`, `.bashrc.local`, `.zshrc.local`, `.agents/.skill-lock.json`, and two machine-specific theme files.
+- An ignore entry without a `/` matches that **basename at any depth**. `CLAUDE.md` and `AGENTS.md` are therefore anchored (`^/CLAUDE\.md`), so this repo's own instructions stay out of `~` while `.claude/CLAUDE.md` is still linked.
 - To stop tracking a file: add it to `.stow-local-ignore`, then run `stow -D . && stow .` to re-apply.
 
 ## Architecture
@@ -114,6 +115,21 @@ The two CLIs fold at different depths **on purpose**:
   the tstack skills) symlinked in. Codex regenerates `skills/.system/` on startup, so a folded
   `skills` dir would drag those back into the repo. Each Codex skill symlink needs its own
   `!.codex/skills/<name>` line in `.gitignore`, or it stays untracked.
+
+`.agents/.skill-lock.json` is the skills CLI's record of what it installed on a machine. It is
+tracked as the Mac's copy (where `~/.agents` is a folded symlink, so it lands here anyway) but
+stow-ignored, because a machine with a real `~/.agents` has its own lock listing skills this repo
+does not carry.
+
+### Global agent instructions (.claude/CLAUDE.md)
+
+`.claude/CLAUDE.md` is stowed to `~/.claude/CLAUDE.md`, the instructions Claude Code loads in
+**every** session on every machine. It is not this file: this root `CLAUDE.md` only describes the
+dotfiles repo. Keep the global file machine-neutral and safe for a public repo. Anything that holds
+for one machine only (paths, hostnames, local services) goes in `~/.claude/rules/machine.md` on
+that machine, which Claude Code also loads in every session and which is not tracked here. Do not
+add a `.claude/rules/` directory to this repo: stow would then own that folder's files and the
+split would be gone.
 
 The tstack skills (`babysit-pr`, `council`, `file-pr`, `full-send`, `full-stop`,
 `leaving-pr-comments`, `modernize`, `sol-loop`, `takeover`) are vendored copies of
