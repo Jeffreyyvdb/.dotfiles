@@ -51,3 +51,6 @@ __pycache__/
 .config/opencode/cli.json
 .config/opencode/service.json
 .config/opencode/local.json
+
+# Claude Code project-local permissions, written when a session runs inside this repo
+.claude/settings.local.json
