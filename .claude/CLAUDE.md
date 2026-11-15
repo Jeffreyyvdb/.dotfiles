@@ -57,3 +57,7 @@ Start **one** subagent with the Agent tool, in the background (`subagent_type: "
 ### Afterwards
 
 Do not wait for the subagent before your final reply. End the reply with one line saying a wiki update is running in the background. If its result arrives while the session is still open, pass it on in one line (pages and commit, or the error). Never claim the wiki was updated before the subagent has reported it.
+
+## Reviews use Opus, not Sol
+
+There is no OpenAI or opencode subscription. When `sol-loop`, `full-send`, `full-stop` or `council` runs, or anything else asks for a GPT Sol review, load the `opus-review` skill first. It replaces Sol with Claude Opus and overrides sol-loop's "do not substitute a model" rule.
