@@ -200,8 +200,20 @@ To update pstack, copy the same paths from a newer tag of pstack-claude over `ve
 (`git archive <tag> .claude-plugin .agents/plugins plugins/pstack LICENSE LICENSE-cursor-team-kit
 LICENSE-thermos NOTICE.md NOTICE-skills.md README.md VERSION`), review the diff, and update the tag
 above. Every plugin ships a session-start hook that routes multi-file, design and unknown-cause bug
-work into `poteto-mode`; `setup-pstack` (`/pstack:setup-pstack` in Claude Code) turns it off per
-machine with `session hook: off` and sets the model per role.
+work into `poteto-mode`; `setup-pstack` (`/pstack:setup-pstack` in Claude Code) turns it off with
+`session hook: off` and sets the model per role.
+
+Those choices live in one model sheet per CLI, each naming only that CLI's own models.
+`.claude/pstack-models.md` (Claude models) and `.codex/pstack-models.md` (Codex models, whitelisted in
+`.gitignore`) are tracked and stowed into `~/.claude` and `~/.codex`, so every machine shares them. The
+Copilot sheet stays untracked in `~/.copilot`: Copilot's `setup-pstack` builds it from the models that
+account can reach, and the user picks each one. The shared `.agents/AGENTS.md` wires them in:
+Claude Code through an `@~/.claude/pstack-models.md` import, Codex through an instruction to read its
+sheet, and Copilot through the plugin hook. pstack's own Codex step, pasting the rows into
+`~/.codex/AGENTS.md`, would put them in the shared file, where Claude would see GPT rows. Panels stay
+single-vendor per CLI on purpose: mixing Claude and GPT through T3 Code's `delegate_task` only works
+inside T3 and is outside pstack's contract. Because `.claude/pstack-models.md` sits at this repo's root, the hook
+also treats it as this repo's project sheet, which is harmless because it is the same file.
 
 `~/.codex` must never become a single symlink into this repo. It was one until 2026-09-12, which meant
 Codex wrote its whole state — live OAuth tokens in `auth.json`, `memories/logs/state` sqlite dbs
