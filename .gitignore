@@ -22,6 +22,7 @@ __pycache__/
 # symlinks below are tracked; everything else under .codex/ is machine state.
 .codex/*
 !.codex/AGENTS.md
+!.codex/pstack-models.md
 !.codex/skills/
 .codex/skills/*
 !.codex/skills/nvim

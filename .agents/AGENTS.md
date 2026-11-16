@@ -70,6 +70,16 @@ The wiki instructions the run follows live in the script. Its log, ending in a s
 
 Do not wait for the run or check its log. End your final reply with one line saying a wiki update was started in the background. If the script itself failed (for example `claude` or `gh` is missing), say that in that line instead. If it printed that earlier runs failed, add their log paths to that line so Jeffrey can replay them. Never claim the wiki was updated.
 
+## pstack model sheets
+
+pstack skills take per-role models from a sheet per CLI, each naming only that CLI's own models. Read only your CLI's sheet and ignore the others:
+
+- Claude Code: `~/.claude/pstack-models.md`, imported by the line below.
+- Codex: `~/.codex/pstack-models.md`. Codex has no import, so read it before a pstack skill that dispatches subagents.
+- Copilot CLI: `~/.copilot/pstack-models.md`, injected by the pstack plugin's hook. Build it with `setup-pstack` inside Copilot; it is machine-specific and not tracked.
+
+@~/.claude/pstack-models.md
+
 ## Heavy jobs go through `heavy`
 
 Several agent sessions share one machine. Run one-shot memory-heavy commands (type checks such as `svelte-check`, linters over a whole repo, production builds, test suites, Playwright runs) through `~/.agents/bin/heavy`, e.g. `~/.agents/bin/heavy bun run check`. It waits for a machine-wide slot and enough free memory, so parallel sessions cannot all start one at once. It can wait minutes: give the call a long timeout or run it in the background. Never wrap anything that keeps running (dev servers, `vite dev`, a perf stack), since it would hold the slot until stopped, and run each heavy command on its own rather than several in parallel. `heavy --status` shows who holds the slots. Where the script is missing, run the command directly.
