@@ -17,7 +17,7 @@ Read the repo's README first, then:
 3. Back up any conflicting ~/.zshrc / ~/.bashrc before stowing.
 4. Create the machine-specific ~/.zshrc.local (macOS) or ~/.bashrc.local (Linux)
    exactly as the README's "Create machine-specific local config" step describes.
-5. Run `stow -v .` from ~/.dotfiles.
+5. Run `source ~/.dotfiles/.config/shell/fns/dotfiles && dotfiles stow` (not a plain `stow .`; see step 5 of the Quick Start).
 6. Install the Required dependencies for my OS from the Dependencies tables.
 7. Run `mise install`.
 
@@ -102,9 +102,11 @@ source ~/.local/share/omarchy/default/bashrc
 ### 5. Stow
 
 ```bash
-cd ~/.dotfiles
-stow -v .
+source ~/.dotfiles/.config/shell/fns/dotfiles   # bash or zsh
+dotfiles stow
 ```
+
+`dotfiles stow` wraps `stow --restow -v .`. On Linux it first creates `~/.config/systemd/user` and `~/.config/user-tmpfiles.d` as real directories. Otherwise stow would link each whole directory into this repo, and units that `systemctl --user enable` writes there would land in the checkout. On macOS it skips that Linux-only config. Later shells re-stow through the same function.
 
 ### 6. Install dependencies
 
@@ -284,7 +286,7 @@ Every interactive shell keeps this repo in sync with the remote automatically (d
 **On startup it:**
 
 - Runs a **throttled background `git fetch`** (never blocks the shell on the network — the result is used by the *next* shell).
-- If the working tree is **clean and behind** the remote → **fast-forwards and runs `stow --restow .`** automatically, then prints `✓ dotfiles: applied N remote commit(s)`.
+- If the working tree is **clean and behind** the remote → **fast-forwards and runs `dotfiles stow`** automatically, then prints `✓ dotfiles: applied N remote commit(s)`.
 - If you have **uncommitted local changes** → prints a banner listing them and does **nothing else** (never auto-merges over your work).
 - If the branch has **diverged** or has **unpushed commits** → prints a banner only.
 - If **up to date** → silent.
@@ -298,6 +300,7 @@ It **never auto-commits and never auto-pushes** — only fast-forwards a clean t
 | `dotfiles status` | Fetch + show branch and ahead/behind counts |
 | `dotfiles apply` | Fast-forward the remote + restow, on demand |
 | `dotfiles diff` | Show uncommitted local changes |
+| `dotfiles stow` | Stow the repo into `$HOME` (also the first install) |
 
 ### Turning it off / tuning
 

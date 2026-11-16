@@ -11,6 +11,8 @@
 #   dotfiles [status]  fetch now + show branch / ahead-behind / working changes
 #   dotfiles apply     fast-forward apply remote + restow, on demand
 #   dotfiles diff      show uncommitted local changes
+#   dotfiles stow      stow (or restow) the repo into $HOME; use this, not plain
+#                      `stow .`, also for the first install
 #
 # Override in ~/.zshrc.local / ~/.bashrc.local:
 #   DOTFILES_AUTO_SYNC       set 0 to disable startup fetch/apply entirely; the
@@ -20,6 +22,25 @@
 
 : "${DOTFILES_DIR:=$HOME/.dotfiles}"
 : "${DOTFILES_FETCH_INTERVAL:=43200}"
+
+# Stow the repo into $HOME. Directories that other tools also write into must be
+# real directories in $HOME: when one is missing, stow links the whole directory
+# into this repo, and whatever `systemctl --user enable/edit` writes there then
+# lands in this public checkout (and its untracked files stop the auto-sync). The
+# systemd and user-tmpfiles config is Linux-only, so other systems skip it.
+_dotfiles_stow() {
+  ( cd "$DOTFILES_DIR" || exit 1
+    case "$(uname -s)" in
+      Linux)
+        mkdir -p "$HOME/.config/systemd/user" "$HOME/.config/user-tmpfiles.d"
+        stow --restow "$@" .
+        ;;
+      *)
+        stow --restow --ignore='\.config/systemd' --ignore='\.config/user-tmpfiles\.d' "$@" .
+        ;;
+    esac
+  )
+}
 
 _dotfiles_stamp() {
   printf '%s/dotfiles/last-fetch' "${XDG_CACHE_HOME:-$HOME/.cache}"
@@ -82,7 +103,7 @@ _dotfiles_autocheck() {
 
   if [ "$behind" -gt 0 ] && [ "$ahead" -eq 0 ]; then
     if git -C "$DOTFILES_DIR" merge --ff-only "$upstream" >/dev/null 2>&1; then
-      ( cd "$DOTFILES_DIR" && stow --restow . >/dev/null 2>&1 )
+      _dotfiles_stow >/dev/null 2>&1
       _dotfiles_say 32 "✓ dotfiles: applied $behind remote commit(s)"
     else
       _dotfiles_say 33 "⚠ dotfiles: $behind remote commit(s) could not fast-forward"
@@ -125,7 +146,7 @@ dotfiles() {
           echo "✗ local changes present — review with 'dotfiles diff' first"; return 1
         fi
         if git merge --ff-only "$up" >/dev/null 2>&1; then
-          stow --restow . >/dev/null 2>&1
+          _dotfiles_stow >/dev/null 2>&1
           echo "✓ applied + restowed"
         else
           echo "✗ not a fast-forward — diverged, resolve manually"; return 1
@@ -135,8 +156,11 @@ dotfiles() {
     diff|d)
       ( cd "$repo" || return 1; git status -s; git diff )
       ;;
+    stow|s)
+      _dotfiles_stow -v
+      ;;
     *)
-      echo "usage: dotfiles [status|apply|diff]"
+      echo "usage: dotfiles [status|apply|diff|stow]"
       ;;
   esac
 }

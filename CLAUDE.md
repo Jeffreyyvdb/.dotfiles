@@ -27,8 +27,8 @@ remove it from history.
 ## Applying changes
 
 ```bash
-# After adding new files/dirs that need symlinking
-cd ~/.dotfiles && stow -v .
+# After adding new files/dirs that need symlinking (wraps `stow --restow -v .`)
+dotfiles stow
 
 # Reload shell config without restarting
 source ~/.bashrc        # Linux
@@ -40,10 +40,10 @@ mise install
 
 ## Stow rules
 
-- `stow -v .` run from `~/.dotfiles` creates symlinks in `~`, mirroring the directory structure here.
+- `dotfiles stow` (`.config/shell/fns/dotfiles`) runs `stow --restow -v .` from `~/.dotfiles`, which creates symlinks in `~` mirroring the directory structure here. Use it rather than a plain `stow .`: on Linux it first creates `~/.config/systemd/user` and `~/.config/user-tmpfiles.d` as real directories, so stow never folds them into one symlink into this repo (where `systemctl --user enable` would then write), and on macOS it skips that Linux-only config. The auto-sync re-stows through the same function.
 - Files listed in `.stow-local-ignore` are **never** symlinked: `.git`, `.gitignore`, `README.md`, the root `CLAUDE.md` and `AGENTS.md`, `.claude/settings.local.json` (Claude Code's per-project permissions for sessions run inside this repo), `.gitconfig`, `.bashrc.local`, `.zshrc.local`, `.agents/.skill-lock.json`, `.agents/AGENTS.local.md`, and two machine-specific theme files.
 - An ignore entry without a `/` matches that **basename at any depth**. `CLAUDE.md` and `AGENTS.md` are therefore anchored (`^/CLAUDE\.md`), so this repo's own instructions stay out of `~` while `.claude/CLAUDE.md` is still linked.
-- To stop tracking a file: add it to `.stow-local-ignore`, then run `stow -D . && stow .` to re-apply.
+- To stop tracking a file: add it to `.stow-local-ignore`, then run `stow -D . && dotfiles stow` to re-apply.
 
 ## Architecture
 
@@ -194,7 +194,7 @@ the dirs before stowing** or the whole problem comes back:
 
 ```bash
 mkdir -p ~/.codex/skills ~/.claude ~/.copilot
-cd ~/.dotfiles && stow -v .
+source ~/.dotfiles/.config/shell/fns/dotfiles && dotfiles stow
 ```
 
 Do not add `.codex` to `.stow-local-ignore` — that would stop the skill symlinks being linked at all.

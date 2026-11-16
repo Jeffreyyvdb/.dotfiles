@@ -11,13 +11,18 @@
 # with the slot held, and exits with the command's status. Do not wrap things that
 # keep running (dev servers, `bun perf up`): the slot would be held until they stop.
 #
-# Env: HEAVY_SLOTS      concurrent heavy jobs (default: 1 per 7 GiB of RAM, min 1)
+# Env: HEAVY_SLOTS      concurrent heavy jobs (default: 1 per 7 GiB of RAM, min 1);
+#                       0 turns heavy off, so it just runs the command
 #      HEAVY_MIN_AVAIL  MiB of MemAvailable to wait for before starting (default 2500)
 #      HEAVY_WAIT       give up waiting after this many seconds (default 1200)
+# Per machine: put a number in ~/.config/heavy/slots (0 = off). That file is not in
+# the dotfiles repo, and it reaches agents whose shells never read ~/.bashrc.local.
+# HEAVY_SLOTS wins over the file.
 #
-# Where flock(1) is missing (macOS), it just runs the command. Locks live in
-# /run/user/$UID/heavy-jobs (HEAVY_DIR overrides), so they are per user and cleared
-# on reboot; a slot is freed the moment its holder exits, however it exits.
+# It just runs the command where it cannot measure memory (no /proc/meminfo, e.g.
+# macOS) or has no flock(1). Locks live in /run/user/$UID/heavy-jobs (HEAVY_DIR
+# overrides), so they are per user and cleared on reboot; a slot is freed the
+# moment its holder exits, however it exits.
 set -uo pipefail
 
 msg() { printf 'heavy: %s\n' "$*" >&2; }
@@ -28,7 +33,20 @@ total_kib=$(mem_kib MemTotal)
 default_slots=1
 [ -n "$total_kib" ] && default_slots=$(( total_kib / (7 * 1024 * 1024) ))
 [ "$default_slots" -ge 1 ] || default_slots=1
-slots=${HEAVY_SLOTS:-$default_slots}
+slots_file=${XDG_CONFIG_HOME:-$HOME/.config}/heavy/slots
+slots=${HEAVY_SLOTS:-}
+[ -z "$slots" ] && [ -r "$slots_file" ] && slots=$(tr -d '[:space:]' < "$slots_file")
+case $slots in
+  '') slots=$default_slots ;;
+  *[!0-9]*) msg "ignoring slot count '$slots' (not a number)"; slots=$default_slots ;;
+esac
+
+# Why heavy steps aside on this machine, if it does; empty when it throttles.
+off=""
+if [ "$slots" -eq 0 ]; then off="turned off (HEAVY_SLOTS or $slots_file is 0)"
+elif [ -z "$total_kib" ]; then off="no /proc/meminfo to measure memory with"
+elif ! command -v flock >/dev/null; then off="no flock(1)"
+fi
 min_avail=${HEAVY_MIN_AVAIL:-2500}
 max_wait=${HEAVY_WAIT:-1200}
 # A fixed path, not $XDG_RUNTIME_DIR: a sandboxed command may not have it set, and
@@ -57,14 +75,15 @@ status() {
 }
 
 if [ "${1:-}" = "--status" ]; then
-  command -v flock >/dev/null || { echo "no flock here; heavy does not throttle"; exit 0; }
-  status
+  if [ -n "$off" ]; then echo "heavy does not throttle here: $off; commands run directly"
+  else status
+  fi
   exit 0
 fi
 [ "${1:-}" = "--" ] && shift
 [ $# -gt 0 ] || { msg "usage: heavy <command> [args...] | heavy --status"; exit 2; }
 
-command -v flock >/dev/null || exec "$@"
+[ -z "$off" ] || exec "$@"
 
 mkdir -p "$dir" 2>/dev/null
 
