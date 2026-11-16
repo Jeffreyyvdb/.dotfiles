@@ -29,6 +29,7 @@
 # lands in this public checkout (and its untracked files stop the auto-sync). The
 # systemd and user-tmpfiles config is Linux-only, so other systems skip it.
 _dotfiles_stow() {
+  _dotfiles_unfold
   ( cd "$DOTFILES_DIR" || exit 1
     case "$(uname -s)" in
       Linux)
@@ -40,6 +41,22 @@ _dotfiles_stow() {
         ;;
     esac
   )
+}
+
+# Remove a stow-folded symlink for those directories: one that resolves to the
+# same path inside this repo, which only stow makes. A plain `stow .` (or the
+# sync code an older checkout had loaded) creates them when the directory did
+# not exist yet, and `mkdir -p` would then just follow the link. Returns 0 when
+# it removed one.
+_dotfiles_unfold() {
+  local repo d removed=1
+  repo="$(cd "$DOTFILES_DIR" 2>/dev/null && pwd -P)" || return 1
+  for d in "$HOME/.config/systemd" "$HOME/.config/systemd/user" "$HOME/.config/user-tmpfiles.d"; do
+    [ -L "$d" ] || continue
+    [ "$(cd "$d" 2>/dev/null && pwd -P)" = "$repo/${d#"$HOME"/}" ] || continue
+    rm "$d" && removed=0
+  done
+  return $removed
 }
 
 _dotfiles_stamp() {
@@ -77,6 +94,9 @@ _dotfiles_say() {
 # plus a throttled background fetch.
 _dotfiles_autocheck() {
   [ -d "$DOTFILES_DIR/.git" ] || return 0
+
+  # Repair a fold left by older sync code (it stowed before this file updated).
+  _dotfiles_unfold && _dotfiles_stow >/dev/null 2>&1
 
   _dotfiles_maybe_fetch
 
