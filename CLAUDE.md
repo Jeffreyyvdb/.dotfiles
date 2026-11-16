@@ -179,9 +179,9 @@ The tstack skills (`babysit-pr`, `council`, `file-pr`, `full-send`, `full-stop`,
 
 `opus-review` is **not** part of tstack and survives that re-copy. It is a Claude-only add-on
 (no `.codex/skills` link) that swaps GPT Sol for Claude Opus in `sol-loop`, `full-send`,
-`full-stop` and `council`, because there is no OpenAI subscription. The vendored skills stay
-untouched; the global `.agents/AGENTS.md` tells every session to load `opus-review` when one
-of them runs. To go back to Sol, delete that section and the skill.
+`full-stop` and `council`. Since 2026-11-16 it is a fallback only: Sol is reachable through
+GitHub Copilot or Codex, so the global `.agents/AGENTS.md` says to review with Sol and load
+`opus-review` only when no route runs Sol. The vendored skills stay untouched.
 
 `~/.codex` must never become a single symlink into this repo. It was one until 2026-09-12, which meant
 Codex wrote its whole state — live OAuth tokens in `auth.json`, `memories/logs/state` sqlite dbs
