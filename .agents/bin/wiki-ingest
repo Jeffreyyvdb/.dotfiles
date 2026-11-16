@@ -1,0 +1,143 @@
+#!/usr/bin/env bash
+# wiki-ingest: hand a session's durable facts to a detached, headless Claude run
+# that updates the personal wiki (Jeffreyyvdb/wiki-agent) and pushes to main.
+#
+#   ~/.agents/bin/wiki-ingest "<short topic>" <<'EOF'
+#   - fact one
+#   - fact two
+#   EOF
+#
+# It returns at once. The update runs outside the calling agent session, so no
+# subagent, transcript or completion notice ever lands in that session. Each run
+# leaves <id>.facts.md and <id>.log in ~/.local/state/wiki-ingest/; the log ends
+# with the run's short report (pages touched and commit, or why nothing changed).
+# A run that fails leaves <id>.failed; the next call reports it once, so the
+# caller can tell the user. Meant to work with macOS's bash 3.2 and without GNU
+# coreutils (untested there).
+#
+# Env: WIKI_INGEST_MODEL (default: claude's default model),
+#      WIKI_INGEST_TIMEOUT (default 30m).
+set -euo pipefail
+
+REPO=Jeffreyyvdb/wiki-agent
+STATE=${XDG_STATE_HOME:-$HOME/.local/state}/wiki-ingest
+
+run() {
+  local facts=$1 topic=$2
+  # Globals: the EXIT trap runs after run() returns.
+  dir=$(mktemp -d)
+  failed=${facts%.facts.md}.failed
+  trap 'rc=$?; rm -rf "$dir"; [ "$rc" = 0 ] || touch "$failed"' EXIT
+
+  echo "wiki-ingest: $(stamp) topic: $topic"
+  gh repo clone "$REPO" "$dir/wiki" -- -q
+  cd "$dir/wiki"
+
+  local prompt
+  read -r -d '' prompt <<EOF || true
+You are a headless run started by the wiki-ingest script, not by Jeffrey. The
+current directory is a fresh clone of $REPO, made for this run only.
+
+Facts from a finished agent session (topic: $topic):
+
+$(cat "$facts")
+
+Update the wiki with the facts above. You have full authority to commit and push
+to main yourself. No PR and no review are needed.
+
+1. Read the wiki's CLAUDE.md (the schema; it wins where it covers something).
+   Read the existing pages for every project, tool or concept the facts touch,
+   and today's session-log page if it exists. Search index.md for the names you
+   need rather than reading it whole.
+2. Follow the schema's Ingest steps 4-7, without the "discuss with the user"
+   step. Put each fact on the hub or entity page it belongs to, updating in
+   place rather than creating duplicates, and replace statements the facts make
+   untrue. Then record the session in the day's session-log source page
+   (wiki/sources/sessions-YYYY-MM-DD.md, the schema's session-log variant). If
+   that page already has a section on the same topic, update that section in
+   place, so the page never says two different things about one subject;
+   otherwise append a section. Keep a section to what was learned, not a list of
+   what was done. Create a new page only when the schema's "Heuristics for what
+   deserves a page" say so. Keep hub discipline: Active work has at most 6
+   bullets with no dates or PR numbers, and every decision ends with a source
+   link. Do not merge or drop existing bullets that the facts do not touch.
+   Bump updated: on every page you touch. Register new pages in index.md in one
+   line each and append one ingest entry to log.md.
+3. If the facts add nothing the wiki doesn't already say, change nothing and
+   report "no wiki change".
+4. Check every [[link]] on the pages you touched: it must resolve by filename or
+   aliases:, case-insensitively, with no space/dash swap. [[index]] is valid.
+5. Commit as "ingest: session YYYY-MM-DD <short topic>" and end the message with
+   "Co-Authored-By: Claude <noreply@anthropic.com>". Then
+   git pull --rebase origin main and git push origin main. If the push is
+   rejected because another session pushed first, pull with rebase and push
+   again, up to 3 times. Resolve log.md conflicts by keeping both entries in
+   date order.
+6. Reply in at most 3 lines: the pages created and updated, and the commit hash,
+   or why nothing was pushed.
+EOF
+
+  local model=()
+  [ -n "${WIKI_INGEST_MODEL:-}" ] && model=(--model "$WIKI_INGEST_MODEL")
+
+  # Drop the parent session's variables so this run is a plain, separate
+  # session and never attaches to the caller's (or T3 Code's) messaging.
+  # Keep the ones that say how claude authenticates.
+  local unset=() var
+  for var in $(compgen -e); do
+    case $var in
+      CLAUDE_CODE_OAUTH_TOKEN | CLAUDE_CODE_USE_*) ;;
+      CLAUDECODE | CLAUDE_CODE_* | CLAUDE_AGENT_* | CLAUDE_PID | CLAUDE_EFFORT | AI_AGENT | T3CODE_* | T3_*) unset+=(-u "$var") ;;
+    esac
+  done
+
+  # timeout is GNU coreutils (gtimeout from Homebrew on macOS); without it, no limit.
+  local limit=()
+  if command -v timeout >/dev/null; then limit=(timeout "${WIKI_INGEST_TIMEOUT:-30m}")
+  elif command -v gtimeout >/dev/null; then limit=(gtimeout "${WIKI_INGEST_TIMEOUT:-30m}")
+  fi
+
+  # A rebase conflict must not open an editor in a run with no terminal.
+  export GIT_EDITOR=true
+  env ${unset[@]+"${unset[@]}"} ${limit[@]+"${limit[@]}"} \
+    claude -p "$prompt" ${model[@]+"${model[@]}"} \
+    --permission-mode acceptEdits \
+    --allowedTools Read Edit Write Glob Grep 'Bash(git *)' \
+    </dev/null
+  echo "wiki-ingest: $(stamp) done"
+}
+
+stamp() { date '+%Y-%m-%dT%H:%M:%S%z'; }
+
+if [ "${1:-}" = --run ]; then
+  run "$2" "$3"
+  exit
+fi
+
+topic=${1:?usage: wiki-ingest \"<short topic>\" < facts}
+command -v claude >/dev/null || { echo "wiki-ingest: claude CLI not found" >&2; exit 1; }
+command -v gh >/dev/null || { echo "wiki-ingest: gh CLI not found" >&2; exit 1; }
+
+mkdir -p "$STATE"
+find "$STATE" -type f -mtime +30 -delete 2>/dev/null || true
+id=$(date +%Y%m%d-%H%M%S)-$$
+facts=$STATE/$id.facts.md
+log=$STATE/$id.log
+cat >"$facts"
+[ -s "$facts" ] || { echo "wiki-ingest: no facts on stdin" >&2; rm -f "$facts"; exit 1; }
+
+# Detach into its own session so it outlives the caller. macOS has no setsid
+# binary, but it ships perl.
+if command -v setsid >/dev/null; then
+  setsid nohup "$0" --run "$facts" "$topic" >"$log" 2>&1 </dev/null &
+else
+  nohup perl -MPOSIX -e 'POSIX::setsid(); exec @ARGV' "$0" --run "$facts" "$topic" >"$log" 2>&1 </dev/null &
+fi
+echo "wiki-ingest: started, log at $log"
+
+# Surface runs that failed earlier, so the caller can tell the user.
+for f in "$STATE"/*.failed; do
+  [ -e "$f" ] || continue
+  echo "wiki-ingest: an earlier run failed, see ${f%.failed}.log (facts in ${f%.failed}.facts.md)"
+  rm -f "$f"
+done

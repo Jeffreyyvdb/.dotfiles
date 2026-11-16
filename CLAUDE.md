@@ -155,6 +155,15 @@ in the working tree but stays untracked). How each CLI gets it:
 Verified 2026-11-16 on macOS (Claude Code, Copilot CLI 1.0.110) with tools disabled: both CLIs
 answered from the global and the local file. Codex and opencode are not tested.
 
+The global file's end-of-session wiki update goes through `.agents/bin/wiki-ingest` (reached as
+`~/.agents/bin/wiki-ingest`), not an in-session subagent. The agent pipes its facts in; the script
+saves them, then starts a detached headless `claude -p` (`setsid`, or perl's `POSIX::setsid` on
+macOS) in a fresh temp clone of the wiki, with the parent session's `CLAUDE*`/`T3*` env vars
+stripped, and returns at once. A failed run leaves `<id>.failed`, which the next call reports. The reason is that a
+background subagent's report re-entered the session after the final reply, cluttering it and
+breaking T3 Code's suggested next prompt. The wiki prompt lives in the script; logs go to
+`~/.local/state/wiki-ingest/` and are pruned after 30 days. Any CLI with a shell can call it.
+
 `~/.copilot` must be a real directory before stowing, like `~/.codex`, or stow folds it into this
 repo and Copilot writes its session state here: `mkdir -p ~/.copilot` on a fresh machine.
 
