@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+# heavy: run a memory-heavy job (type check, lint, production build, test suite,
+# Playwright run) only when one of a few machine-wide slots is free, so parallel
+# agent sessions cannot all start one at the same moment.
+#
+#   ~/.agents/bin/heavy bun run check
+#   ~/.agents/bin/heavy dotnet test MusicHoarder.Api.Tests/MusicHoarder.Api.Tests.csproj
+#   ~/.agents/bin/heavy --status        # who holds the slots, and free memory
+#
+# It waits for a slot, then for MemAvailable to reach a floor, runs the command
+# with the slot held, and exits with the command's status. Do not wrap things that
+# keep running (dev servers, `bun perf up`): the slot would be held until they stop.
+#
+# Env: HEAVY_SLOTS      concurrent heavy jobs (default: 1 per 7 GiB of RAM, min 1);
+#                       0 turns heavy off, so it just runs the command
+#      HEAVY_MIN_AVAIL  MiB of MemAvailable to wait for before starting (default 2500)
+#      HEAVY_WAIT       give up waiting after this many seconds (default 1200)
+# Per machine: put a number in ~/.config/heavy/slots (0 = off). That file is not in
+# the dotfiles repo, and it reaches agents whose shells never read ~/.bashrc.local.
+# HEAVY_SLOTS wins over the file.
+#
+# It just runs the command where it cannot measure memory (no /proc/meminfo, e.g.
+# macOS) or has no flock(1). Locks live in /run/user/$UID/heavy-jobs (HEAVY_DIR
+# overrides), so they are per user and cleared on reboot; a slot is freed the
+# moment its holder exits, however it exits.
+set -uo pipefail
+
+msg() { printf 'heavy: %s\n' "$*" >&2; }
+
+mem_kib() { awk -v k="$1:" '$1 == k { print $2 }' /proc/meminfo 2>/dev/null; }
+
+total_kib=$(mem_kib MemTotal)
+default_slots=1
+[ -n "$total_kib" ] && default_slots=$(( total_kib / (7 * 1024 * 1024) ))
+[ "$default_slots" -ge 1 ] || default_slots=1
+slots_file=${XDG_CONFIG_HOME:-$HOME/.config}/heavy/slots
+slots=${HEAVY_SLOTS:-}
+[ -z "$slots" ] && [ -r "$slots_file" ] && slots=$(tr -d '[:space:]' < "$slots_file")
+case $slots in
+  '') slots=$default_slots ;;
+  *[!0-9]*) msg "ignoring slot count '$slots' (not a number)"; slots=$default_slots ;;
+esac
+
+# Why heavy steps aside on this machine, if it does; empty when it throttles.
+off=""
+if [ "$slots" -eq 0 ]; then off="turned off (HEAVY_SLOTS or $slots_file is 0)"
+elif [ -z "$total_kib" ]; then off="no /proc/meminfo to measure memory with"
+elif ! command -v flock >/dev/null; then off="no flock(1)"
+fi
+min_avail=${HEAVY_MIN_AVAIL:-2500}
+max_wait=${HEAVY_WAIT:-1200}
+# A fixed path, not $XDG_RUNTIME_DIR: a sandboxed command may not have it set, and
+# every caller must agree on the directory. ~/.config/user-tmpfiles.d/heavy-jobs.conf
+# pre-creates the slot files at login for sandboxes that cannot create files here.
+uid=$(id -u)
+if [ -n "${HEAVY_DIR:-}" ]; then dir=$HEAVY_DIR
+elif [ -d "/run/user/$uid" ]; then dir=/run/user/$uid/heavy-jobs
+else dir=/tmp/heavy-jobs-$uid
+fi
+
+status() {
+  echo "slots: $slots, waiting for ${min_avail} MiB available before a start"
+  local avail
+  avail=$(mem_kib MemAvailable)
+  [ -n "$avail" ] && echo "MemAvailable: $(( avail / 1024 )) MiB"
+  local i
+  for (( i = 0; i < slots; i++ )); do
+    local f=$dir/slot.$i
+    if [ -e "$f" ] && ! flock -n "$f" true 2>/dev/null; then
+      echo "slot $i: busy - $(cat "$f" 2>/dev/null)"
+    else
+      echo "slot $i: free"
+    fi
+  done
+}
+
+if [ "${1:-}" = "--status" ]; then
+  if [ -n "$off" ]; then echo "heavy does not throttle here: $off; commands run directly"
+  else status
+  fi
+  exit 0
+fi
+[ "${1:-}" = "--" ] && shift
+[ $# -gt 0 ] || { msg "usage: heavy <command> [args...] | heavy --status"; exit 2; }
+
+[ -z "$off" ] || exec "$@"
+
+mkdir -p "$dir" 2>/dev/null
+
+# Take the first free slot. Open read-write where we can (to note who holds it);
+# a sandbox that cannot write here can still lock an existing file read-only.
+take_slot() {
+  local i f
+  for (( i = 0; i < slots; i++ )); do
+    f=$dir/slot.$i
+    # The braces keep 2>/dev/null temporary; on a bare exec it would stick.
+    if { exec {fd}<>"$f"; } 2>/dev/null || { exec {fd}<"$f"; } 2>/dev/null; then
+      if flock -n "$fd"; then
+        slot=$i
+        return 0
+      fi
+      exec {fd}>&-
+    fi
+  done
+  return 1
+}
+
+start=$SECONDS
+said=""
+while ! take_slot; do
+  if [ ! -w "$dir" ] && [ ! -e "$dir/slot.0" ]; then
+    msg "cannot create locks in $dir; running without a slot"
+    exec "$@"
+  fi
+  if [ -z "$said" ]; then
+    msg "all $slots slot(s) busy; waiting (heavy --status shows who holds them)"
+    said=1
+  fi
+  if (( SECONDS - start >= max_wait )); then
+    msg "gave up after ${max_wait}s waiting for a slot"
+    exit 75
+  fi
+  sleep 3
+done
+
+# Slot held. Note who holds it, then wait for memory to come back if it is low.
+{ printf '%s pid %s in %s: %s\n' "$(date +%H:%M:%S)" "$$" "$PWD" "$*" > "$dir/slot.$slot"; } 2>/dev/null
+said=""
+while :; do
+  avail=$(mem_kib MemAvailable)
+  [ -z "$avail" ] || (( avail / 1024 >= min_avail )) && break
+  if [ -z "$said" ]; then
+    msg "slot $slot taken; waiting for ${min_avail} MiB available (now $(( avail / 1024 )))"
+    said=1
+  fi
+  if (( SECONDS - start >= max_wait )); then
+    msg "gave up after ${max_wait}s: memory stayed below ${min_avail} MiB"
+    exit 75
+  fi
+  sleep 3
+done
+
+# Run with the lock fd closed in the child, so a process it leaves behind cannot
+# keep the slot. Forward TERM/INT/HUP so stopping heavy stops the job.
+"$@" {fd}>&- &
+child=$!
+trap 'kill -TERM "$child" 2>/dev/null' TERM INT HUP
+while :; do
+  wait "$child"
+  rc=$?
+  kill -0 "$child" 2>/dev/null || break
+done
+exit "$rc"
