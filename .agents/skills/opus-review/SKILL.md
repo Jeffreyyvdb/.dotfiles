@@ -1,13 +1,14 @@
 ---
 name: opus-review
-description: Add-on to the tstack skills. Use Claude Opus wherever they call for GPT Sol, because there is no OpenAI subscription. Load it whenever sol-loop, full-send, full-stop or council runs, or a skill asks for a Sol review.
+description: Fallback add-on to the tstack skills. Use Claude Opus where they call for GPT Sol, but only after every route to Sol (T3 Copilot/Codex providers, native Copilot or Codex subagents) has been tried and failed. Do not load it just because sol-loop, full-send, full-stop or council runs.
 ---
 
 # opus-review
 
-There is no OpenAI (Codex) or opencode subscription, so GPT Sol cannot run. This
-skill patches the vendored tstack skills (`sol-loop`, `full-send`, `full-stop`,
-`council`) without editing them. Where this file and those skills
+Sol is normally reachable (through GitHub Copilot or Codex), so the tstack
+skills run Sol as written. Load this skill only when no route runs Sol in the
+current session. It then patches the vendored tstack skills (`sol-loop`,
+`full-send`, `full-stop`, `council`) without editing them. Where this file and those skills
 disagree, this file wins.
 
 ## The substitution

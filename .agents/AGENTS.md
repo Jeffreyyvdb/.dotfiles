@@ -12,6 +12,8 @@ Some sections below name Claude Code tools (`Agent`, skills). In another CLI, us
 
 The wiki sections below apply only to Jeffrey's personal repos and infrastructure. A repo the local file marks as work, or any repo owned by an employer or client, is not "his own": never read the personal wiki for it and never write anything learned in it to the personal wiki.
 
+Public repos, their commits and their PRs never mention work: no employer, client, work machine or work tooling. Put machine-specific facts in `~/.agents/AGENTS.local.md` instead and keep the public wording generic.
+
 Jeffrey keeps a personal knowledge-base wiki in the GitHub repo `Jeffreyyvdb/wiki-agent` (an Obsidian vault; its `CLAUDE.md` is the schema). Sessions read it before they work and feed it afterwards.
 
 ## Read the wiki before working
@@ -68,6 +70,8 @@ The wiki instructions the run follows live in the script. Its log, ending in a s
 
 Do not wait for the run or check its log. End your final reply with one line saying a wiki update was started in the background. If the script itself failed (for example `claude` or `gh` is missing), say that in that line instead. If it printed that earlier runs failed, add their log paths to that line so Jeffrey can replay them. Never claim the wiki was updated.
 
-## Reviews use Opus, not Sol
+## Reviews use Sol, Opus only as a fallback
 
-There is no OpenAI or opencode subscription. When `sol-loop`, `full-send`, `full-stop` or `council` runs, or anything else asks for a GPT Sol review, load the `opus-review` skill first. It replaces Sol with Claude Opus and overrides sol-loop's "do not substitute a model" rule.
+GPT Sol is reachable through GitHub Copilot or Codex; `~/.agents/AGENTS.local.md` may say which route a machine has. When `sol-loop`, `full-send`, `full-stop` or `council` runs, follow those skills as written and review with Sol. In T3, find it with `orchestrator_capabilities` (the Copilot or Codex provider); in Copilot CLI or Codex, use a native subagent on the latest Sol model.
+
+Only when you have tried every route and none runs Sol, load the `opus-review` skill. It replaces Sol with Claude Opus and overrides sol-loop's "do not substitute a model" rule. Say in your reply that Opus stood in and why.
