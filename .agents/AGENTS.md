@@ -73,9 +73,3 @@ Do not wait for the run or check its log. End your final reply with one line say
 ## Heavy jobs go through `heavy`
 
 Several agent sessions share one machine. Run one-shot memory-heavy commands (type checks such as `svelte-check`, linters over a whole repo, production builds, test suites, Playwright runs) through `~/.agents/bin/heavy`, e.g. `~/.agents/bin/heavy bun run check`. It waits for a machine-wide slot and enough free memory, so parallel sessions cannot all start one at once. It can wait minutes: give the call a long timeout or run it in the background. Never wrap anything that keeps running (dev servers, `vite dev`, a perf stack), since it would hold the slot until stopped, and run each heavy command on its own rather than several in parallel. `heavy --status` shows who holds the slots. Where the script is missing, run the command directly.
-
-## Reviews use Sol, Opus only as a fallback
-
-GPT Sol is reachable through GitHub Copilot or Codex; `~/.agents/AGENTS.local.md` may say which route a machine has. When `sol-loop`, `full-send`, `full-stop` or `council` runs, follow those skills as written and review with Sol. In T3, find it with `orchestrator_capabilities` (the Copilot or Codex provider); in Copilot CLI or Codex, use a native subagent on the latest Sol model.
-
-Only when you have tried every route and none runs Sol, load the `opus-review` skill. It replaces Sol with Claude Opus and overrides sol-loop's "do not substitute a model" rule. Say in your reply that Opus stood in and why.

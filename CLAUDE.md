@@ -111,8 +111,8 @@ The two CLIs fold at different depths **on purpose**:
   account's synced skills (~10MB, rewritten on every sync) — which is gitignored, so the repo can
   still own the rest of that directory. If `.claude/skills/synced/` shows up as untracked, the ignore
   rule has gone missing; do not commit it.
-- `~/.codex` and `~/.codex/skills` are both **real dirs**, with only the leaves (`nvim`, `ralph`,
-  the tstack skills) symlinked in. Codex regenerates `skills/.system/` on startup, so a folded
+- `~/.codex` and `~/.codex/skills` are both **real dirs**, with only the leaves (`nvim`, `ralph`)
+  symlinked in. Codex regenerates `skills/.system/` on startup, so a folded
   `skills` dir would drag those back into the repo. Each Codex skill symlink needs its own
   `!.codex/skills/<name>` line in `.gitignore`, or it stays untracked.
 
@@ -172,16 +172,36 @@ refuses to link over it. Move the content into `~/.agents/AGENTS.local.md` and d
 original before stowing. Never use `stow --adopt` for these: that would copy the machine's file,
 possibly with employer details, into this public repo.
 
-The tstack skills (`babysit-pr`, `council`, `file-pr`, `full-send`, `full-stop`,
-`leaving-pr-comments`, `modernize`, `sol-loop`, `takeover`) are vendored copies of
-`github.com/t3dotgg/tstack` (commit `11e37a7`). To update, re-copy `tstack/skills/*` over
-`.agents/skills/` and review the diff.
+pstack is vendored as Michael Denyer's multi-harness port, `github.com/michael-denyer/pstack-claude`
+(tag `v0.9.138`, commit `2044f18`), in `vendor/pstack-claude/`: the two marketplace manifests,
+`plugins/pstack/` and the license and notice files. It ports Lauren Tan's Cursor pstack with a native
+plugin per CLI, so one copy serves every agent here. `vendor/` is stow-ignored: each CLI installs the
+plugin from `~/.dotfiles/vendor/pstack-claude` rather than reading a link in `~`. It replaced the
+tstack skills (`github.com/t3dotgg/tstack`) and the `opus-review` add-on on 2026-11-16; pstack's
+playbooks cover their babysit, ship, takeover and review work.
 
-`opus-review` is **not** part of tstack and survives that re-copy. It is a Claude-only add-on
-(no `.codex/skills` link) that swaps GPT Sol for Claude Opus in `sol-loop`, `full-send`,
-`full-stop` and `council`. Since 2026-11-16 it is a fallback only: Sol is reachable through
-GitHub Copilot or Codex, so the global `.agents/AGENTS.md` says to review with Sol and load
-`opus-review` only when no route runs Sol. The vendored skills stay untouched.
+Claude Code and Codex copy the plugin into their own cache, so each machine installs it once and
+re-runs the update after a pull that changes `vendor/`:
+
+```bash
+claude plugin marketplace add ~/.dotfiles/vendor/pstack-claude
+claude plugin install pstack@pstack-claude        # later: claude plugin update pstack@pstack-claude
+codex plugin marketplace add ~/.dotfiles/vendor/pstack-claude
+codex plugin add pstack@pstack-claude             # then trust its hook once with /hooks in codex
+copilot plugin marketplace add ~/.dotfiles/vendor/pstack-claude   # local path untested
+copilot plugin install pstack@pstack-claude
+```
+
+opencode reads the plugin straight from the repo through `plugins` in `.config/opencode/opencode.json`.
+That path is written `{env:HOME}/...` because opencode does not expand `~` in `plugins` (it does in
+`instructions`), so a pull updates opencode with no extra step.
+
+To update pstack, copy the same paths from a newer tag of pstack-claude over `vendor/pstack-claude/`
+(`git archive <tag> .claude-plugin .agents/plugins plugins/pstack LICENSE LICENSE-cursor-team-kit
+LICENSE-thermos NOTICE.md NOTICE-skills.md README.md VERSION`), review the diff, and update the tag
+above. Every plugin ships a session-start hook that routes multi-file, design and unknown-cause bug
+work into `poteto-mode`; `setup-pstack` (`/pstack:setup-pstack` in Claude Code) turns it off per
+machine with `session hook: off` and sets the model per role.
 
 `~/.codex` must never become a single symlink into this repo. It was one until 2026-09-12, which meant
 Codex wrote its whole state — live OAuth tokens in `auth.json`, `memories/logs/state` sqlite dbs

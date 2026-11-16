@@ -26,16 +26,6 @@ __pycache__/
 .codex/skills/*
 !.codex/skills/nvim
 !.codex/skills/ralph
-# tstack skills (github.com/t3dotgg/tstack)
-!.codex/skills/babysit-pr
-!.codex/skills/council
-!.codex/skills/file-pr
-!.codex/skills/full-send
-!.codex/skills/full-stop
-!.codex/skills/leaving-pr-comments
-!.codex/skills/modernize
-!.codex/skills/sol-loop
-!.codex/skills/takeover
 
 # Claude Code syncs the account's skills into skills/synced/ at runtime (~10MB,
 # rewritten on every sync, bucket dir named after account ids). ~/.claude/skills
