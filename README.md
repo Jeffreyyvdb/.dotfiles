@@ -348,3 +348,5 @@ sudo pacman -S ttf-jetbrains-mono-nerd
 ## License
 
 [MIT](LICENSE). The AI agent skills under `.agents/skills/` and `.claude/skills/` are third-party and retain their own licenses; see `.agents/skills/skills-lock.json` for their upstream sources.
+
+`vendor/pstack-claude/` is [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (poteto), with skills from Cursor's cursor-team-kit and thermos, as ported to other agent CLIs by [Michael Denyer](https://github.com/michael-denyer/pstack-claude). It is MIT-licensed by its authors, not by this repo; its `LICENSE*` and `NOTICE.md` files list each source and copyright holder.
