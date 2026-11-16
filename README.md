@@ -316,6 +316,13 @@ To opt out completely:
 export DOTFILES_AUTO_SYNC=0
 ```
 
+## Agent Memory Guards (Linux)
+
+Several agent sessions (Claude Code, Codex, opencode under T3 Code) often run side by side, and each may start a type check, a production build or a browser. On a 15 GB machine a handful of those at once pushes the desktop's `app.slice` past systemd-oomd's pressure limit, and oomd then kills a *whole* agent session, often a bystander rather than the one using the memory: it picks the cgroup reclaiming fastest, not the biggest. Two pieces keep that from happening:
+
+- **`.config/systemd/user/t3code-.scope.d/` and `t3code-codex-.scope.d/`**: prefix drop-ins that reach every transient scope T3 Code starts an agent in (live ones too, on `systemctl --user daemon-reload`). Each scope gets `MemoryMax` (40% of RAM; 50% for the one `codex app-server` scope that hosts every Codex thread), a `MemorySwapMax`, and `OOMPolicy=continue`. A runaway then hits its own ceiling first, the kernel kills the biggest process *inside* it (the build, not the agent), and the session survives. Without `OOMPolicy=continue` systemd would stop the whole scope after that kill. Check with `systemctl --user show 't3code-*' -p MemoryMax,MemorySwapMax,OOMPolicy`.
+- **`~/.agents/bin/heavy`**: a machine-wide semaphore for one-shot heavy jobs. `heavy bun run check` waits for one of a few slots (1 per 7 GiB of RAM) and for `MemAvailable` to reach a floor, then runs the command. `heavy --status` shows who holds the slots. Slot files live in `/run/user/$UID/heavy-jobs`; `.config/user-tmpfiles.d/heavy-jobs.conf` pre-creates them at login (needs `systemctl --user enable systemd-tmpfiles-setup.service`), so a Codex sandbox, which cannot create files there, can still lock them. On macOS (no `flock`) it just runs the command.
+
 ## Fonts
 
 Both terminal configs (Alacritty and Ghostty) expect **JetBrainsMono Nerd Font**:
