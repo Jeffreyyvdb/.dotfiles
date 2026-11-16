@@ -10,3 +10,9 @@ export PATH="$HOME/.aspire/bin:$PATH"
 # opencode: machine-specific settings (e.g. server.cors with a private hostname)
 # live in an untracked ~/.config/opencode/local.json, merged over the global config.
 [ -f "$HOME/.config/opencode/local.json" ] && export OPENCODE_CONFIG="$HOME/.config/opencode/local.json"
+
+# GitHub Copilot CLI: load the machine-local agent instructions. Copilot has no
+# global AGENTS.md or imports; it does load *.instructions.md files under
+# <dir>/.github/instructions/ for each dir listed here, so each machine with an
+# ~/.agents/AGENTS.local.md links it in (see CLAUDE.md, "Global agent instructions").
+export COPILOT_CUSTOM_INSTRUCTIONS_DIRS="$HOME/.agents"

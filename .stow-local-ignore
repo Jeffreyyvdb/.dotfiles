@@ -18,3 +18,4 @@ LICENSE
 __pycache__
 
 \.skill-lock\.json
+^/\.agents/AGENTS\.local\.md

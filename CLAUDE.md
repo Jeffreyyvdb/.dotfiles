@@ -41,7 +41,7 @@ mise install
 ## Stow rules
 
 - `stow -v .` run from `~/.dotfiles` creates symlinks in `~`, mirroring the directory structure here.
-- Files listed in `.stow-local-ignore` are **never** symlinked: `.git`, `.gitignore`, `README.md`, the root `CLAUDE.md` and `AGENTS.md`, `.claude/settings.local.json` (Claude Code's per-project permissions for sessions run inside this repo), `.gitconfig`, `.bashrc.local`, `.zshrc.local`, `.agents/.skill-lock.json`, and two machine-specific theme files.
+- Files listed in `.stow-local-ignore` are **never** symlinked: `.git`, `.gitignore`, `README.md`, the root `CLAUDE.md` and `AGENTS.md`, `.claude/settings.local.json` (Claude Code's per-project permissions for sessions run inside this repo), `.gitconfig`, `.bashrc.local`, `.zshrc.local`, `.agents/.skill-lock.json`, `.agents/AGENTS.local.md`, and two machine-specific theme files.
 - An ignore entry without a `/` matches that **basename at any depth**. `CLAUDE.md` and `AGENTS.md` are therefore anchored (`^/CLAUDE\.md`), so this repo's own instructions stay out of `~` while `.claude/CLAUDE.md` is still linked.
 - To stop tracking a file: add it to `.stow-local-ignore`, then run `stow -D . && stow .` to re-apply.
 
@@ -121,15 +121,47 @@ tracked as the Mac's copy (where `~/.agents` is a folded symlink, so it lands he
 stow-ignored, because a machine with a real `~/.agents` has its own lock listing skills this repo
 does not carry.
 
-### Global agent instructions (.claude/CLAUDE.md)
+### Global agent instructions (.agents/AGENTS.md)
 
-`.claude/CLAUDE.md` is stowed to `~/.claude/CLAUDE.md`, the instructions Claude Code loads in
-**every** session on every machine. It is not this file: this root `CLAUDE.md` only describes the
-dotfiles repo. Keep the global file machine-neutral and safe for a public repo. Anything that holds
-for one machine only (paths, hostnames, local services) goes in `~/.claude/rules/machine.md` on
-that machine, which Claude Code also loads in every session and which is not tracked here. Do not
-add a `.claude/rules/` directory to this repo: stow would then own that folder's files and the
-split would be gone.
+`.agents/AGENTS.md` is the one global instruction file for every agent CLI, on every machine. It is
+not this file: this root `CLAUDE.md` only describes the dotfiles repo. Tracked symlinks point each
+CLI's global location at it:
+
+| CLI | Reads | Repo symlink |
+|---|---|---|
+| Claude Code | `~/.claude/CLAUDE.md` | `.claude/CLAUDE.md` → `../.agents/AGENTS.md` |
+| Codex | `~/.codex/AGENTS.md` | `.codex/AGENTS.md` → `../.agents/AGENTS.md` (whitelisted in `.gitignore`) |
+| opencode | `~/.config/opencode/AGENTS.md` | `.config/opencode/AGENTS.md` → `../../.agents/AGENTS.md` |
+| Copilot CLI | `~/.copilot/copilot-instructions.md` | `.copilot/copilot-instructions.md` → `../.agents/AGENTS.md` (whitelisted in `.gitignore`) |
+
+Keep the global file machine-neutral and safe for a public repo. Anything that holds for one
+machine only (paths, hostnames, local services, employer-specific rules) goes in
+`~/.agents/AGENTS.local.md` on that machine. It is gitignored and stow-ignored, so it cannot be
+committed or linked by accident (on a machine where `~/.agents` is folded into this repo, it sits
+in the working tree but stays untracked). How each CLI gets it:
+
+- **Claude Code** expands the `@~/.agents/AGENTS.local.md` import line; a missing file is skipped.
+- **opencode** does not expand `@` imports; `.config/opencode/opencode.json` lists the file under
+  `instructions`.
+- **Copilot CLI** has no global `AGENTS.md` and no imports, and it ignores symlinks in
+  `~/.copilot/instructions/`. It does load `*.instructions.md` from `<dir>/.github/instructions/`
+  for each dir in `COPILOT_CUSTOM_INSTRUCTIONS_DIRS` (set to `~/.agents` in `.config/shell/envs`),
+  and there it follows symlinks. Each machine with a local file runs once:
+  `mkdir -p ~/.agents/.github/instructions && ln -s ../../AGENTS.local.md ~/.agents/.github/instructions/local.instructions.md`.
+  The env var only reaches a Copilot started from the shell.
+- **Codex** has no import or append mechanism (`AGENTS.override.md` replaces, not appends), so the
+  global file tells the agent to read the local file itself. That is a soft guarantee only.
+
+Verified 2026-11-16 on macOS (Claude Code, Copilot CLI 1.0.110) with tools disabled: both CLIs
+answered from the global and the local file. Codex and opencode are not tested.
+
+`~/.copilot` must be a real directory before stowing, like `~/.codex`, or stow folds it into this
+repo and Copilot writes its session state here: `mkdir -p ~/.copilot` on a fresh machine.
+
+On a machine that already has its own real `~/.claude/CLAUDE.md` or `~/.codex/AGENTS.md`, stow
+refuses to link over it. Move the content into `~/.agents/AGENTS.local.md` and delete the
+original before stowing. Never use `stow --adopt` for these: that would copy the machine's file,
+possibly with employer details, into this public repo.
 
 The tstack skills (`babysit-pr`, `council`, `file-pr`, `full-send`, `full-stop`,
 `leaving-pr-comments`, `modernize`, `sol-loop`, `takeover`) are vendored copies of
@@ -139,7 +171,7 @@ The tstack skills (`babysit-pr`, `council`, `file-pr`, `full-send`, `full-stop`,
 `opus-review` is **not** part of tstack and survives that re-copy. It is a Claude-only add-on
 (no `.codex/skills` link) that swaps GPT Sol for Claude Opus in `sol-loop`, `full-send`,
 `full-stop` and `council`, because there is no OpenAI subscription. The vendored skills stay
-untouched; the global `.claude/CLAUDE.md` tells every session to load `opus-review` when one
+untouched; the global `.agents/AGENTS.md` tells every session to load `opus-review` when one
 of them runs. To go back to Sol, delete that section and the skill.
 
 `~/.codex` must never become a single symlink into this repo. It was one until 2026-09-12, which meant
@@ -152,7 +184,7 @@ Stow folds a directory into one symlink when the target does not exist, so on a 
 the dirs before stowing** or the whole problem comes back:
 
 ```bash
-mkdir -p ~/.codex/skills ~/.claude
+mkdir -p ~/.codex/skills ~/.claude ~/.copilot
 cd ~/.dotfiles && stow -v .
 ```
 
