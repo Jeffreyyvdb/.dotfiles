@@ -49,24 +49,24 @@ Also skip the update when:
 
 ### How
 
-Start **one** subagent with the Agent tool, in the background (`subagent_type: "general-purpose"`). It starts cold, so its prompt must carry everything it needs:
+Hand the facts to `~/.agents/bin/wiki-ingest`. It starts a separate, headless Claude run that updates the wiki and pushes to `main`, then returns at once. Nothing from that run comes back into this session, so the session stays about its own work. Do **not** use a subagent or a background task for this: their reports re-enter the session after your final reply and clutter it.
 
-1. **The facts**, written out as a self-contained list: project or repo names, paths, URLs, dates (absolute, `YYYY-MM-DD`), commands, decisions with their reasons, numbers, and open actions with deadlines. Say which earlier statement a fact replaces when you know one (for example "PR 12 is now merged; it was open this morning"). Leave out secrets, tokens, passwords and keys, even when they appeared in the session.
-2. **These instructions**, copied into the prompt:
+Write the facts as a self-contained list, because the run starts cold: project or repo names, paths, URLs, dates (absolute, `YYYY-MM-DD`), commands, decisions with their reasons, numbers, and open actions with deadlines. Say which earlier statement a fact replaces when you know one (for example "PR 12 is now merged; it was open this morning"). Leave out secrets, tokens, passwords and keys, even when they appeared in the session.
 
-> Update the wiki in `Jeffreyyvdb/wiki-agent` with the facts above. You have full authority to commit and push to `main` yourself. No PR and no review are needed.
->
-> 1. Work in your own clone so you never collide with other sessions: `D=$(mktemp -d) && gh repo clone Jeffreyyvdb/wiki-agent "$D/wiki"`. Do not touch any other working copy of the wiki on this machine.
-> 2. Read the wiki's `CLAUDE.md` (the schema; it wins where it covers something). Read the existing pages for every project, tool or concept the facts touch, and today's session-log page if it exists. Search `index.md` for the names you need rather than reading it whole.
-> 3. Follow the schema's Ingest steps 4–7, without the "discuss with the user" step. Put each fact on the hub or entity page it belongs to, updating in place rather than creating duplicates, and replace statements the facts make untrue. Then record the session in the day's session-log source page (`wiki/sources/sessions-YYYY-MM-DD.md`, the schema's session-log variant). If that page already has a section on the same topic, update that section in place, so the page never says two different things about one subject; otherwise append a section. Keep a section to what was learned, not a list of what was done. Create a new page only when the schema's "Heuristics for what deserves a page" say so. Keep hub discipline: Active work has at most 6 bullets with no dates or PR numbers, and every decision ends with a source link. Bump `updated:` on every page you touch. Register new pages in `index.md` in one line each and append one `ingest` entry to `log.md`.
-> 4. If the facts add nothing the wiki doesn't already say, change nothing and report "no wiki change".
-> 5. Check every `[[link]]` on the pages you touched: it must resolve by filename or `aliases:`, case-insensitively, with no space/dash swap. `[[index]]` is valid.
-> 6. Commit as `ingest: session YYYY-MM-DD <short topic>` and end the message with `Co-Authored-By: Claude <noreply@anthropic.com>`. Then `git pull --rebase origin main` and `git push origin main`. If the push is rejected because another session pushed first, pull with rebase and push again, up to 3 times. Resolve `log.md` conflicts by keeping both entries in date order.
-> 7. Delete the temporary clone. Reply in at most 3 lines: the pages created and updated, and the commit hash, or why nothing was pushed.
+Pipe them in with one ordinary foreground shell call (not a background one), passing a short topic:
+
+```bash
+~/.agents/bin/wiki-ingest "<short topic>" <<'EOF'
+- fact one
+- fact two
+EOF
+```
+
+The wiki instructions the run follows live in the script. Its log, ending in a short report (pages and commit, or "no wiki change"), is written to `~/.local/state/wiki-ingest/`.
 
 ### Afterwards
 
-Do not wait for the subagent before your final reply. End the reply with one line saying a wiki update is running in the background. If its result arrives while the session is still open, pass it on in one line (pages and commit, or the error). Never claim the wiki was updated before the subagent has reported it.
+Do not wait for the run or check its log. End your final reply with one line saying a wiki update was started in the background. If the script itself failed (for example `claude` or `gh` is missing), say that in that line instead. If it printed that earlier runs failed, add their log paths to that line so Jeffrey can replay them. Never claim the wiki was updated.
 
 ## Reviews use Opus, not Sol
 
