@@ -19,3 +19,6 @@ __pycache__
 
 \.skill-lock\.json
 ^/\.agents/AGENTS\.local\.md
+
+# Vendored agent plugins: installed into each CLI from ~/.dotfiles/vendor, never linked into ~
+^/vendor

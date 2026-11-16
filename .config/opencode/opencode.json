@@ -1,5 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "autoupdate": false,
-  "instructions": ["~/.agents/AGENTS.local.md"]
+  "instructions": ["~/.agents/AGENTS.local.md"],
+  "plugins": ["{env:HOME}/.dotfiles/vendor/pstack-claude/plugins/pstack/opencode"]
 }
