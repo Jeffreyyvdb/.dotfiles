@@ -33,7 +33,7 @@ _dotfiles_stow() {
   ( cd "$DOTFILES_DIR" || exit 1
     case "$(uname -s)" in
       Linux)
-        mkdir -p "$HOME/.config/systemd/user" "$HOME/.config/user-tmpfiles.d"
+        for d in $(_dotfiles_real_dirs); do mkdir -p "$HOME/$d"; done
         stow --restow "$@" .
         ;;
       *)
@@ -41,6 +41,19 @@ _dotfiles_stow() {
         ;;
     esac
   )
+}
+
+# The directories, relative to $HOME, that must not be stow-folded. Besides the
+# two above, that is every unit drop-in directory here (t3code-.scope.d, ...):
+# systemd silently ignores a drop-in directory that is a *relative* symlink,
+# which is what stow makes, while a real directory holding stow's relative file
+# links works. Parents come first.
+_dotfiles_real_dirs() {
+  echo .config/systemd
+  echo .config/systemd/user
+  echo .config/user-tmpfiles.d
+  [ -d "$DOTFILES_DIR/.config/systemd/user" ] &&
+    ( cd "$DOTFILES_DIR" && find .config/systemd/user -mindepth 1 -maxdepth 1 -type d -name '*.d' )
 }
 
 # Remove a stow-folded symlink for those directories: one that resolves to the
@@ -51,10 +64,10 @@ _dotfiles_stow() {
 _dotfiles_unfold() {
   local repo d removed=1
   repo="$(cd "$DOTFILES_DIR" 2>/dev/null && pwd -P)" || return 1
-  for d in "$HOME/.config/systemd" "$HOME/.config/systemd/user" "$HOME/.config/user-tmpfiles.d"; do
-    [ -L "$d" ] || continue
-    [ "$(cd "$d" 2>/dev/null && pwd -P)" = "$repo/${d#"$HOME"/}" ] || continue
-    rm "$d" && removed=0
+  for d in $(_dotfiles_real_dirs); do
+    [ -L "$HOME/$d" ] || continue
+    [ "$(cd "$HOME/$d" 2>/dev/null && pwd -P)" = "$repo/$d" ] || continue
+    rm "$HOME/$d" && removed=0
   done
   return $removed
 }

@@ -106,7 +106,7 @@ source ~/.dotfiles/.config/shell/fns/dotfiles   # bash or zsh
 dotfiles stow
 ```
 
-`dotfiles stow` wraps `stow --restow -v .`. On Linux it first creates `~/.config/systemd/user` and `~/.config/user-tmpfiles.d` as real directories. Otherwise stow would link each whole directory into this repo, and units that `systemctl --user enable` writes there would land in the checkout. On macOS it skips that Linux-only config. Later shells re-stow through the same function.
+`dotfiles stow` wraps `stow --restow -v .`. On Linux it first creates `~/.config/systemd/user`, `~/.config/user-tmpfiles.d` and each systemd drop-in directory here (`t3code-.scope.d`, ...) as real directories. Otherwise stow would link each whole directory into this repo, and units that `systemctl --user enable` writes there would land in the checkout. And systemd silently ignores a drop-in directory that is a relative symlink, which is what stow makes. On macOS it skips that Linux-only config. Later shells re-stow through the same function.
 
 ### 6. Install dependencies
 
