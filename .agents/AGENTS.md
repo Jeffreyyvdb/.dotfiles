@@ -70,6 +70,14 @@ The wiki instructions the run follows live in the script. Its log, ending in a s
 
 Do not wait for the run or check its log. End your final reply with one line saying a wiki update was started in the background. If the script itself failed (for example `claude` or `gh` is missing), say that in that line instead. If it printed that earlier runs failed, add their log paths to that line so Jeffrey can replay them. Never claim the wiki was updated.
 
+## Codex through ChatGPT sharing in T3 Code
+
+In T3 Code sessions using Codex through ChatGPT sharing, do not use native Codex subagents (`spawn_agent` or its follow-up tools). Multiple sessions have failed with "Codex used a feature that ChatGPT sharing does not support" immediately after a native subagent attempt. Treat native delegation as unsupported on this connection until support is verified. If the connection type is unknown in a T3 Codex session, work without native subagents.
+
+This restriction overrides pstack's native delegation and fan-out instructions. Read and apply the relevant skills, but perform investigation and implementation sequentially in the current agent. Do not silently substitute `delegate_task`, another provider, or another CLI. If an independent review cannot run, report that limitation without claiming an independent verdict.
+
+After this provider error, an ordinary retry may retain the failing context. Recover the same thread with T3's `freshContext: true`, carrying forward the user's task, constraints, worktree, and verified progress in a concise handoff. Inspect the working tree before resuming. Do not repeat the unsupported call. Do not change provider or model unless the user asks.
+
 ## pstack model sheets
 
 pstack skills take per-role models from a sheet per CLI, each naming only that CLI's own models. Read only your CLI's sheet and ignore the others:
