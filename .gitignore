@@ -56,3 +56,6 @@ __pycache__/
 # history and a sqlite db); only the global instructions symlink is tracked.
 .copilot/*
 !.copilot/copilot-instructions.md
+
+# Dependencies installed when a vendored skill's script runs (pstack's poteto-mode)
+node_modules/
