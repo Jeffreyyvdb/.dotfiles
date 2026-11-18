@@ -8,7 +8,8 @@
 # A throttled fetch runs in the background so the shell never blocks on the network.
 #
 # Manual command:
-#   dotfiles [status]  fetch now + show branch / ahead-behind / working changes
+#   dotfiles [status]  fetch now + show branch / ahead-behind / working changes,
+#                      and Codex model ids a newer release has replaced
 #   dotfiles apply     fast-forward apply remote + restow, on demand
 #   dotfiles diff      show uncommitted local changes
 #   dotfiles stow      stow (or restow) the repo into $HOME; use this, not plain
@@ -167,6 +168,10 @@ dotfiles() {
           printf 'behind %s, ahead %s\n' \
             "$(git rev-list --count HEAD.."$up" 2>/dev/null || echo 0)" \
             "$(git rev-list --count "$up"..HEAD 2>/dev/null || echo 0)"
+        fi
+        if command -v python3 >/dev/null 2>&1 && ! .agents/bin/codex-model-check >/dev/null 2>&1; then
+          echo "stale Codex model ids (newer release in the catalog):"
+          .agents/bin/codex-model-check | sed 's/^/    /'
         fi
       )
       ;;

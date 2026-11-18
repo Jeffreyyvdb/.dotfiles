@@ -214,13 +214,20 @@ sheet, and Copilot through the plugin hook. pstack's own Codex step, pasting the
 Because `.claude/pstack-models.md` sits at this repo's root, the hook
 also treats it as this repo's project sheet, which is harmless because it is the same file.
 
+The Codex sheet pins exact versioned ids (`gpt-6.2-sol`), so it falls behind each release.
+`.agents/bin/codex-model-check` compares every `gpt-<version>-<family>` id in that sheet and in
+`~/.agents/AGENTS.local.md` with the live catalog Codex caches in `~/.codex/models_cache.json`, and
+prints each id that has a newer version of the same family. `dotfiles status` runs it. Take new ids
+from that cache or from T3's `orchestrator_capabilities` (with `search`), never by guessing the
+slug: a family's versions move independently, so a new Sol does not mean a new Terra or Luna.
+
 To route a pstack review to another provider in T3 Code, add one entry per lead provider to
 `~/.agents/AGENTS.local.md`. Use the provider instance IDs and exact model IDs reported by T3's
 `orchestrator_capabilities`. For example, on a machine with Claude and Codex:
 
 ```text
-- pstack T3 reviewer: claudeAgent -> codex / gpt-6.1-sol
-- pstack T3 reviewer: codex -> claudeAgent / claude-opus-5-5
+- pstack T3 reviewer: claudeAgent -> codex / <Codex model ID>
+- pstack T3 reviewer: codex -> claudeAgent / <Claude model ID>
 ```
 
 For a machine with Claude and Copilot, add both directions using the Copilot instance ID and a

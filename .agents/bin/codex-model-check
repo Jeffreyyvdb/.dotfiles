@@ -1,0 +1,66 @@
+#!/usr/bin/env -S python3 -I
+"""Flag Codex model ids that a newer release in the same family has replaced.
+
+Codex keeps the live model catalog in ~/.codex/models_cache.json. Ids such as
+gpt-6.1-sol name a version and a family (sol, astra, terra, luna). For every
+such id in the given files, this prints file:line when the cache lists a newer
+version of that family, so a hand-pinned model sheet does not silently fall
+behind a release. It prints nothing and exits 0 when every id is current, and
+exits 1 when it found a stale one.
+
+Usage: codex-model-check [file ...]
+With no files it checks ~/.codex/pstack-models.md and ~/.agents/AGENTS.local.md.
+Set CODEX_MODELS_CACHE to read another cache file.
+"""
+import json
+import os
+import re
+import sys
+
+ID = re.compile(r"\bgpt-(\d+(?:\.\d+)*)-([a-z]+)\b")
+HOME = os.path.expanduser("~")
+
+
+def version(text):
+    return tuple(int(part) for part in text.split("."))
+
+
+def newest_per_family(cache_path):
+    with open(cache_path) as f:
+        models = json.load(f).get("models", [])
+    newest = {}
+    for model in models:
+        if model.get("visibility") != "list":
+            continue
+        match = ID.fullmatch(model.get("slug", ""))
+        if not match:
+            continue
+        ver, family = version(match[1]), match[2]
+        if family not in newest or ver > newest[family][0]:
+            newest[family] = (ver, match[0])
+    return newest
+
+
+def main(argv):
+    cache = os.environ.get("CODEX_MODELS_CACHE", f"{HOME}/.codex/models_cache.json")
+    if not os.path.exists(cache):
+        print(f"codex-model-check: no Codex models cache at {cache}; run codex once", file=sys.stderr)
+        return 0
+    newest = newest_per_family(cache)
+    files = argv or [f"{HOME}/.codex/pstack-models.md", f"{HOME}/.agents/AGENTS.local.md"]
+    stale = 0
+    for path in files:
+        if not os.path.exists(path):
+            continue
+        with open(path) as f:
+            for lineno, line in enumerate(f, 1):
+                for match in ID.finditer(line):
+                    best = newest.get(match[2])
+                    if best and version(match[1]) < best[0]:
+                        print(f"{path}:{lineno}: {match[0]} -> {best[1]}")
+                        stale += 1
+    return 1 if stale else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
