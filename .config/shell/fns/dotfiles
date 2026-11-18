@@ -28,7 +28,8 @@
 # real directories in $HOME: when one is missing, stow links the whole directory
 # into this repo, and whatever `systemctl --user enable/edit` writes there then
 # lands in this public checkout (and its untracked files stop the auto-sync). The
-# systemd and user-tmpfiles config is Linux-only, so other systems skip it.
+# systemd, environment.d and user-tmpfiles config is Linux-only, so other systems
+# skip it.
 _dotfiles_stow() {
   _dotfiles_unfold
   ( cd "$DOTFILES_DIR" || exit 1
@@ -38,20 +39,22 @@ _dotfiles_stow() {
         stow --restow "$@" .
         ;;
       *)
-        stow --restow --ignore='\.config/systemd' --ignore='\.config/user-tmpfiles\.d' "$@" .
+        stow --restow --ignore='\.config/systemd' --ignore='\.config/environment\.d' \
+          --ignore='\.config/user-tmpfiles\.d' "$@" .
         ;;
     esac
   )
 }
 
 # The directories, relative to $HOME, that must not be stow-folded. Besides the
-# two above, that is every unit drop-in directory here (t3code-.scope.d, ...):
+# three above, that is every unit drop-in directory here (t3code-.scope.d, ...):
 # systemd silently ignores a drop-in directory that is a *relative* symlink,
 # which is what stow makes, while a real directory holding stow's relative file
 # links works. Parents come first.
 _dotfiles_real_dirs() {
   echo .config/systemd
   echo .config/systemd/user
+  echo .config/environment.d
   echo .config/user-tmpfiles.d
   [ -d "$DOTFILES_DIR/.config/systemd/user" ] &&
     ( cd "$DOTFILES_DIR" && find .config/systemd/user -mindepth 1 -maxdepth 1 -type d -name '*.d' )
