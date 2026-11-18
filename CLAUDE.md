@@ -210,10 +210,24 @@ Copilot sheet stays untracked in `~/.copilot`: Copilot's `setup-pstack` builds i
 account can reach, and the user picks each one. The shared `.agents/AGENTS.md` wires them in:
 Claude Code through an `@~/.claude/pstack-models.md` import, Codex through an instruction to read its
 sheet, and Copilot through the plugin hook. pstack's own Codex step, pasting the rows into
-`~/.codex/AGENTS.md`, would put them in the shared file, where Claude would see GPT rows. Panels stay
-single-vendor per CLI on purpose: mixing Claude and GPT through T3 Code's `delegate_task` only works
-inside T3 and is outside pstack's contract. Because `.claude/pstack-models.md` sits at this repo's root, the hook
+`~/.codex/AGENTS.md`, would put them in the shared file, where Claude would see GPT rows.
+Because `.claude/pstack-models.md` sits at this repo's root, the hook
 also treats it as this repo's project sheet, which is harmless because it is the same file.
+
+To route a pstack review to another provider in T3 Code, add one entry per lead provider to
+`~/.agents/AGENTS.local.md`. Use the provider instance IDs and exact model IDs reported by T3's
+`orchestrator_capabilities`. For example, on a machine with Claude and Codex:
+
+```text
+- pstack T3 reviewer: claudeAgent -> codex / gpt-6.1-sol
+- pstack T3 reviewer: codex -> claudeAgent / claude-opus-5-5
+```
+
+For a machine with Claude and Copilot, add both directions using the Copilot instance ID and a
+review model from that machine's T3 catalog. If Copilot is absent from the catalog, the route is
+unavailable there. Keep this configuration in the local file so each machine uses only its approved
+providers and models. The routing policy lives in `.agents/AGENTS.md` and takes effect when an agent
+session loads the updated instructions. The vendored plugin needs no update.
 
 `~/.codex` must never become a single symlink into this repo. It was one until 2026-09-12, which meant
 Codex wrote its whole state — live OAuth tokens in `auth.json`, `memories/logs/state` sqlite dbs

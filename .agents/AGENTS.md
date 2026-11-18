@@ -74,9 +74,11 @@ Do not wait for the run or check its log. End your final reply with one line say
 
 In T3 Code sessions using Codex through ChatGPT sharing, do not use native Codex subagents (`spawn_agent` or its follow-up tools). Multiple sessions have failed with "Codex used a feature that ChatGPT sharing does not support" immediately after a native subagent attempt. Treat native delegation as unsupported on this connection until support is verified. If the connection type is unknown in a T3 Codex session, work without native subagents.
 
-This restriction overrides pstack's native delegation and fan-out instructions. Read and apply the relevant skills, but perform investigation and implementation sequentially in the current agent. Do not silently substitute `delegate_task`, another provider, or another CLI. If an independent review cannot run, report that limitation without claiming an independent verdict.
+This restriction overrides pstack's native delegation and fan-out instructions. T3's app-owned `delegate_task` is a separate route. When Jeffrey or an applicable skill requests delegation, announce that route before using it. Check `orchestrator_capabilities` before the first delegate call. Require `features.appOwnedSubagents` and the inherited provider's `canRunChildTask` for inherited dispatch, with no constraint blocking the task. Keep the inherited provider, model, and settings unless Jeffrey requests a change or the pstack review routing below selects a configured reviewer.
 
-After this provider error, an ordinary retry may retain the failing context. Recover the same thread with T3's `freshContext: true`, carrying forward the user's task, constraints, worktree, and verified progress in a concise handoff. Inspect the working tree before resuming. Do not repeat the unsupported call. Do not change provider or model unless the user asks.
+Advertised capabilities establish that T3 offers the route, not that a child has run successfully or native support is restored. Do not launch native subagents to test support. If T3 delegation is unavailable or fails, continue independent work sequentially and report the limitation. Never count self-review, tests, or CI as an independent verdict, or claim that a required independent-review gate passed without the required reviews.
+
+After this provider error, an ordinary retry may retain the failing context. Recover the same thread with T3's `freshContext: true`, carrying forward the user's task, constraints, worktree, and verified progress in a concise handoff. Inspect the working tree before resuming. Do not repeat the unsupported call. Keep the lead provider and model unless the user asks to change them.
 
 ## pstack model sheets
 
@@ -87,6 +89,18 @@ pstack skills take per-role models from a sheet per CLI, each naming only that C
 - Copilot CLI: `~/.copilot/pstack-models.md`, injected by the pstack plugin's hook. Build it with `setup-pstack` inside Copilot; it is machine-specific and not tracked.
 
 @~/.claude/pstack-models.md
+
+## Cross-provider pstack reviews in T3 Code
+
+Read `~/.agents/AGENTS.local.md` for `pstack T3 reviewer` entries before dispatching pstack reviewers. Each entry names the lead provider and its approved review target in the form `pstack T3 reviewer: <lead provider instance ID> -> <reviewer provider instance ID> / <model ID>`. A provider or model choice Jeffrey makes for the task overrides the local entry.
+
+In T3, use `delegate_task` for one of the skill's existing review slots when the active lead has a matching entry. This applies to reviews of a change or PR, including `interrogate`, `thermos`, and independent verification in the Shipping playbook. For panels, fill the other slots through the session's normal review route. Implementation and other non-review work use the existing pstack routing.
+
+Before dispatch, use `orchestrator_capabilities` to check `features.appOwnedSubagents`, `canRunCrossProviderChildTask` for both providers, and `canRunChildTask` for the target. Check for constraints and confirm the exact model ID under that target provider. Announce the provider and model, then set `target.providerInstanceId` and `target.model` explicitly. Use the target's options only, and follow T3's `next` instructions to collect the result. Never substitute another external provider or model on your own.
+
+Keep the skill's review count, brief, scope, and evidence requirements. Give the reviewer the intended base and head revisions and any in-scope uncommitted changes it needs to review. Use `isolation: "worktree"` when the skill requires a separate checkout. A T3 worktree starts at the parent's commit and excludes uncommitted edits, so pass those changes separately when needed and confirm the reviewer saw the intended diff before counting its verdict. Report which provider and model ran each review.
+
+Outside T3, or without a matching local entry, use the normal review route for the session. If a configured target is missing, unavailable, or fails, report it and use the normal route only when the skill and session allow it. The native Codex restriction above still applies. If a required independent review cannot run, report the missing verdict and keep the review gate closed.
 
 ## Heavy jobs go through `heavy`
 
