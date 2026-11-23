@@ -40,7 +40,7 @@ mise install
 
 ## Stow rules
 
-- `dotfiles stow` (`.config/shell/fns/dotfiles`) runs `stow --restow -v .` from `~/.dotfiles`, which creates symlinks in `~` mirroring the directory structure here. Use it rather than a plain `stow .`: on Linux it first creates `~/.config/systemd/user`, `~/.config/environment.d`, `~/.config/user-tmpfiles.d` and every `*.d` drop-in directory under `.config/systemd/user` as real directories, so stow never folds them into one symlink into this repo (where `systemctl --user enable` would then write; and systemd ignores a drop-in directory that is a relative symlink, so a folded drop-in silently does nothing), and on macOS it skips that Linux-only config. The auto-sync re-stows through the same function.
+- `dotfiles stow` (`.config/shell/fns/dotfiles`) runs `stow --restow -v .` from `~/.dotfiles`, which creates symlinks in `~` mirroring the directory structure here. Use it rather than a plain `stow .`: it first creates the agent CLI state directories (`~/.claude`, `~/.codex/skills`, `~/.copilot`, `~/.gemini/config`) as real directories on every system, and on Linux also `~/.config/systemd/user`, `~/.config/environment.d`, `~/.config/user-tmpfiles.d` and every `*.d` drop-in directory under `.config/systemd/user` as real directories, so stow never folds them into one symlink into this repo (where `systemctl --user enable` would then write; and systemd ignores a drop-in directory that is a relative symlink, so a folded drop-in silently does nothing), and on macOS it skips that Linux-only config. The auto-sync re-stows through the same function.
 - Files listed in `.stow-local-ignore` are **never** symlinked: `.git`, `.gitignore`, `README.md`, the root `CLAUDE.md` and `AGENTS.md`, `.claude/settings.local.json` (Claude Code's per-project permissions for sessions run inside this repo), `.gitconfig`, `.bashrc.local`, `.zshrc.local`, `.agents/.skill-lock.json`, `.agents/AGENTS.local.md`, and two machine-specific theme files.
 - An ignore entry without a `/` matches that **basename at any depth**. `CLAUDE.md` and `AGENTS.md` are therefore anchored (`^/CLAUDE\.md`), so this repo's own instructions stay out of `~` while `.claude/CLAUDE.md` is still linked.
 - To stop tracking a file: add it to `.stow-local-ignore`, then run `stow -D . && dotfiles stow` to re-apply.
@@ -133,6 +133,7 @@ CLI's global location at it:
 | Codex | `~/.codex/AGENTS.md` | `.codex/AGENTS.md` → `../.agents/AGENTS.md` (whitelisted in `.gitignore`) |
 | opencode | `~/.config/opencode/AGENTS.md` | `.config/opencode/AGENTS.md` → `../../.agents/AGENTS.md` |
 | Copilot CLI | `~/.copilot/copilot-instructions.md` | `.copilot/copilot-instructions.md` → `../.agents/AGENTS.md` (whitelisted in `.gitignore`) |
+| Antigravity (`agy`) | `~/.gemini/config/AGENTS.md` | `.gemini/config/AGENTS.md` → `../../.agents/AGENTS.md` (whitelisted in `.gitignore`) |
 
 Keep the global file machine-neutral and safe for a public repo. Anything that holds for one
 machine only (paths, hostnames, local services, employer-specific rules) goes in
@@ -151,9 +152,14 @@ in the working tree but stays untracked). How each CLI gets it:
   The env var only reaches a Copilot started from the shell.
 - **Codex** has no import or append mechanism (`AGENTS.override.md` replaces, not appends), so the
   global file tells the agent to read the local file itself. That is a soft guarantee only.
+- **Antigravity** reads `~/.gemini/config/AGENTS.md` (or `GEMINI.md` in a workspace) and follows the
+  symlink, but leaves `@` lines unexpanded, so like Codex it relies on the instruction to read the
+  local file.
 
 Verified 2026-11-16 on macOS (Claude Code, Copilot CLI 1.0.110) with tools disabled: both CLIs
-answered from the global and the local file. Codex and opencode are not tested.
+answered from the global and the local file. Verified 2026-11-23 on Linux for Antigravity with a
+canary file linked at `~/.gemini/config/AGENTS.md`: `agy -p` quoted the global canary and printed the
+`@` line verbatim, without the imported one. Codex and opencode are not tested.
 
 The global file's end-of-session wiki update goes through `.agents/bin/wiki-ingest` (reached as
 `~/.agents/bin/wiki-ingest`), not an in-session subagent. The agent pipes its facts in; the script
@@ -164,8 +170,8 @@ background subagent's report re-entered the session after the final reply, clutt
 breaking T3 Code's suggested next prompt. The wiki prompt lives in the script; logs go to
 `~/.local/state/wiki-ingest/` and are pruned after 30 days. Any CLI with a shell can call it.
 
-`~/.copilot` must be a real directory before stowing, like `~/.codex`, or stow folds it into this
-repo and Copilot writes its session state here: `mkdir -p ~/.copilot` on a fresh machine.
+`~/.copilot` and `~/.gemini/config` must be real directories, like `~/.codex`, or stow folds them
+into this repo and Copilot or Antigravity writes its session state here. `dotfiles stow` creates them.
 
 On a machine that already has its own real `~/.claude/CLAUDE.md` or `~/.codex/AGENTS.md`, stow
 refuses to link over it. Move the content into `~/.agents/AGENTS.local.md` and delete the
@@ -214,27 +220,30 @@ sheet, and Copilot through the plugin hook. pstack's own Codex step, pasting the
 Because `.claude/pstack-models.md` sits at this repo's root, the hook
 also treats it as this repo's project sheet, which is harmless because it is the same file.
 
-The Codex sheet pins exact versioned ids (`gpt-6.2-sol`), so it falls behind each release.
-`.agents/bin/codex-model-check` compares every `gpt-<version>-<family>` id in that sheet and in
+The Codex sheet and the reviewer table in `.agents/AGENTS.md` pin exact versioned ids (`gpt-6.2-sol`),
+so they fall behind each release. `.agents/bin/codex-model-check` compares every
+`gpt-<version>-<family>` id in that sheet, in `~/.agents/AGENTS.md` and in
 `~/.agents/AGENTS.local.md` with the live catalog Codex caches in `~/.codex/models_cache.json`, and
 prints each id that has a newer version of the same family. `dotfiles status` runs it. Take new ids
 from that cache or from T3's `orchestrator_capabilities` (with `search`), never by guessing the
 slug: a family's versions move independently, so a new Sol does not mean a new Terra or Luna.
 
-To route a pstack review to another provider in T3 Code, add one entry per lead provider to
-`~/.agents/AGENTS.local.md`. Use the provider instance IDs and exact model IDs reported by T3's
-`orchestrator_capabilities`. For example, on a machine with Claude and Codex:
+pstack reviews in T3 Code go to reviewers on other providers. The reviewer table in
+`.agents/AGENTS.md` lists them per lead provider, so every machine shares them: a Claude lead gets
+Codex `gpt-6.2-sol` and Antigravity `gemini-4-neon`, and a Codex lead gets Claude `claude-opus-5-5`
+and `gemini-4-neon`. Every listed reviewer runs on each review, adding review slots when the skill
+has fewer. A machine without one of those providers reports it and runs the others. Take provider
+instance IDs and model IDs from T3's `orchestrator_capabilities`. A machine can replace a lead's
+reviewers in `~/.agents/AGENTS.local.md`, one entry per reviewer:
 
 ```text
-- pstack T3 reviewer: claudeAgent -> codex / <Codex model ID>
-- pstack T3 reviewer: codex -> claudeAgent / <Claude model ID>
+- pstack T3 reviewer: claudeAgent -> copilot / <Copilot model ID>
 ```
 
-For a machine with Claude and Copilot, add both directions using the Copilot instance ID and a
-review model from that machine's T3 catalog. If Copilot is absent from the catalog, the route is
-unavailable there. Keep this configuration in the local file so each machine uses only its approved
-providers and models. The routing policy lives in `.agents/AGENTS.md` and takes effect when an agent
-session loads the updated instructions. The vendored plugin needs no update.
+Local entries for a lead replace that lead's whole row in the table. The same file holds the rule
+that every Antigravity delegate runs with `runtimeMode: "full-access"` in a worktree, because
+Antigravity has no `auto` mode and otherwise asks for approval on every shell command. The vendored
+plugin needs no update.
 
 `~/.codex` must never become a single symlink into this repo. It was one until 2026-09-12, which meant
 Codex wrote its whole state — live OAuth tokens in `auth.json`, `memories/logs/state` sqlite dbs
@@ -242,11 +251,12 @@ carrying session content from every repo, and ~135MB of `.tmp`/`plugins`/`cache`
 working tree of a public repo. Nothing sensitive ever got committed; the state now lives in a real
 `~/.codex` and `.gitignore` whitelists only the skill symlinks.
 
-Stow folds a directory into one symlink when the target does not exist, so on a **fresh machine create
-the dirs before stowing** or the whole problem comes back:
+Stow folds a directory into one symlink when the target does not exist, so `dotfiles stow` creates
+`~/.claude`, `~/.codex/skills`, `~/.copilot` and `~/.gemini/config` as real directories first, and
+undoes a fold it finds there. On a **fresh machine use it, never a plain `stow .`**, or the whole
+problem comes back:
 
 ```bash
-mkdir -p ~/.codex/skills ~/.claude ~/.copilot
 source ~/.dotfiles/.config/shell/fns/dotfiles && dotfiles stow
 ```
 

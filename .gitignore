@@ -57,5 +57,13 @@ __pycache__/
 .copilot/*
 !.copilot/copilot-instructions.md
 
+# Antigravity (Gemini) runtime state. ~/.gemini and ~/.gemini/config must be real
+# directories (they hold conversations, logs and caches); only the global
+# instructions symlink is tracked.
+.gemini/*
+!.gemini/config/
+.gemini/config/*
+!.gemini/config/AGENTS.md
+
 # Dependencies installed when a vendored skill's script runs (pstack's poteto-mode)
 node_modules/

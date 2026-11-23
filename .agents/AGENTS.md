@@ -1,10 +1,10 @@
 # Global instructions
 
-Shared across Jeffrey's machines and agent CLIs: this file is tracked in the dotfiles repo as `.agents/AGENTS.md` and reaches Claude Code as `~/.claude/CLAUDE.md`, Codex as `~/.codex/AGENTS.md`, opencode as `~/.config/opencode/AGENTS.md` and GitHub Copilot CLI as `~/.copilot/copilot-instructions.md`. Instructions for one machine only (paths, hosts, local services, employer-specific rules) live in `~/.agents/AGENTS.local.md`, which is not tracked. Where the two disagree, the local file wins.
+Shared across Jeffrey's machines and agent CLIs: this file is tracked in the dotfiles repo as `.agents/AGENTS.md` and reaches Claude Code as `~/.claude/CLAUDE.md`, Codex as `~/.codex/AGENTS.md`, opencode as `~/.config/opencode/AGENTS.md`, GitHub Copilot CLI as `~/.copilot/copilot-instructions.md` and Antigravity (Gemini) as `~/.gemini/config/AGENTS.md`. Instructions for one machine only (paths, hosts, local services, employer-specific rules) live in `~/.agents/AGENTS.local.md`, which is not tracked. Where the two disagree, the local file wins.
 
 @~/.agents/AGENTS.local.md
 
-If your tool did not load that file already (Claude Code expands the line above, opencode loads it through its `instructions` setting, Copilot CLI through `COPILOT_CUSTOM_INSTRUCTIONS_DIRS`, Codex does none of these), read `~/.agents/AGENTS.local.md` before you start work and follow it. If it does not exist, this machine has no local rules.
+If your tool did not load that file already (Claude Code expands the line above, opencode loads it through its `instructions` setting, Copilot CLI through `COPILOT_CUSTOM_INSTRUCTIONS_DIRS`, Codex and Antigravity do none of these), read `~/.agents/AGENTS.local.md` before you start work and follow it. If it does not exist, this machine has no local rules.
 
 Some sections below name Claude Code tools (`Agent`, skills). In another CLI, use its equivalent or skip that step.
 
@@ -92,15 +92,26 @@ pstack skills take per-role models from a sheet per CLI, each naming only that C
 
 ## Cross-provider pstack reviews in T3 Code
 
-Read `~/.agents/AGENTS.local.md` for `pstack T3 reviewer` entries before dispatching pstack reviewers. Each entry names the lead provider and its approved review target in the form `pstack T3 reviewer: <lead provider instance ID> -> <reviewer provider instance ID> / <model ID>`. The first ` / ` (with spaces) separates the provider from the model, so a model ID may itself contain `/`. A provider or model choice Jeffrey makes for the task overrides the local entry.
+In T3 Code, pstack reviews of a change or PR also go to reviewers on other providers. This covers `interrogate`, `thermos` and independent verification in the Shipping playbook. The reviewers for each lead provider, by T3 provider instance ID and exact model ID, are:
 
-In T3, use `delegate_task` for one of the skill's existing review slots when the active lead has a matching entry. This applies to reviews of a change or PR, including `interrogate`, `thermos`, and independent verification in the Shipping playbook. For panels, fill the other slots through the session's normal review route. Implementation and other non-review work use the existing pstack routing. A delegated reviewer does the review itself and never applies this routing again, even when its own provider has an entry.
+| Lead provider | Reviewers |
+|---|---|
+| `claudeAgent` | `codex` / `gpt-6.2-sol`, `antigravity` / `gemini-4-neon` |
+| `codex` | `claudeAgent` / `claude-opus-5-5`, `antigravity` / `gemini-4-neon` |
 
-Before dispatch, use `orchestrator_capabilities` to check `features.appOwnedSubagents`, `canRunCrossProviderChildTask` for both providers, and `canRunChildTask` for the target. Check for constraints and confirm the exact model ID under that target provider, using the capabilities `search` when the short model list omits it. Announce the provider and model, then set `target.providerInstanceId` and `target.model` explicitly. Use the target's options only, and follow T3's `next` instructions to collect the result. Never substitute another external provider or model on your own.
+A machine can replace a lead's row with `pstack T3 reviewer` entries in `~/.agents/AGENTS.local.md`, one per reviewer, in the form `pstack T3 reviewer: <lead provider instance ID> -> <reviewer provider instance ID> / <model ID>`. The first ` / ` (with spaces) separates the provider from the model, so a model ID may itself contain `/`. Local entries for a lead replace that lead's whole row. A provider or model choice Jeffrey makes for the task overrides both.
 
-Keep the skill's review count, brief, scope, and evidence requirements. Give the reviewer the intended base and head revisions and any in-scope uncommitted changes it needs to review. Use `isolation: "worktree"` when the skill requires a separate checkout. A T3 worktree starts at the parent's commit and excludes uncommitted edits, so pass those changes separately when needed and confirm the reviewer saw the intended diff before counting its verdict. Report which provider and model ran each review.
+Every reviewer listed for the active lead runs once on each such review, through `delegate_task`. The reviewers take the skill's review slots in the order listed. When the skill has fewer slots than reviewers, add a slot for each remaining reviewer. Fill any slots left over through the session's normal review route. Implementation and other non-review work use the existing pstack routing. A delegated reviewer does the review itself and never applies this routing again.
 
-Outside T3, or without a matching local entry, use the normal review route for the session. If a configured target is missing, unavailable, or fails, report it and use the normal route only when the skill and session allow it. The native Codex restriction above still applies. If a required independent review cannot run, report the missing verdict and keep the review gate closed.
+Before dispatch, use `orchestrator_capabilities` to check `features.appOwnedSubagents`, `canRunCrossProviderChildTask` for both providers, and `canRunChildTask` for each target. Check for constraints and confirm the exact model ID under that target provider, using the capabilities `search` when the short model list omits it. Announce each provider and model, then set `target.providerInstanceId` and `target.model` explicitly. Use the target's options only, and follow T3's `next` instructions to collect each result. Never substitute another external provider or model on your own.
+
+Keep the skill's brief, scope, and evidence requirements. Give each reviewer the intended base and head revisions and any in-scope uncommitted changes it needs to review. Use `isolation: "worktree"` when the skill requires a separate checkout, and always for `antigravity` (see below). A T3 worktree starts at the parent's commit and excludes uncommitted edits, so pass those changes separately when needed and confirm the reviewer saw the intended diff before counting its verdict. Report which provider and model ran each review.
+
+Outside T3, or for a lead with no row and no local entries, use the normal review route for the session. If a listed reviewer is missing on this machine, unavailable, or fails, report it, run the other listed reviewers, and fill its slot through the normal route only when the skill and session allow it. The native Codex restriction above still applies. If a required independent review cannot run, report the missing verdict and keep the review gate closed.
+
+## Antigravity delegates in T3 Code
+
+Every `delegate_task` to the `antigravity` provider (`gemini-4-neon` and the other Gemini models) passes `runtimeMode: "full-access"`, with no exception and no need to ask Jeffrey first. Antigravity has no `auto` mode, so a call that leaves `runtimeMode` out falls back to `auto-accept-edits`, which asks Jeffrey to approve every shell command. The guard is the brief instead: `isolation: "worktree"`, plus the brief's own limits (read-only, no push, no merge) for a review.
 
 ## Heavy jobs go through `heavy`
 
