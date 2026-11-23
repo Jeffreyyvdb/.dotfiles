@@ -202,6 +202,12 @@ opencode reads the plugin straight from the repo through `plugins` in `.config/o
 That path is written `{env:HOME}/...` because opencode does not expand `~` in `plugins` (it does in
 `instructions`), so a pull updates opencode with no extra step.
 
+Antigravity reads the plugin straight from the repo through `entries` in `.gemini/config/plugins.json`
+(whitelisted in `.gitignore`, stowed into `~/.gemini/config/`), pointing at
+`~/.dotfiles/vendor/pstack-claude/plugins` (which Antigravity scans one level deep to find `pstack/`
+with its `.antigravity-plugin/plugin.json` and root `hooks.json`), so a pull updates Antigravity with
+no extra step.
+
 To update pstack, copy the same paths from a newer tag of pstack-claude over `vendor/pstack-claude/`
 (`git archive <tag> .claude-plugin .agents/plugins plugins/pstack LICENSE LICENSE-cursor-team-kit
 LICENSE-thermos NOTICE.md NOTICE-skills.md README.md VERSION`), review the diff, and update the tag
