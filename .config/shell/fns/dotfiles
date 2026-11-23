@@ -26,32 +26,40 @@
 
 # Stow the repo into $HOME. Directories that other tools also write into must be
 # real directories in $HOME: when one is missing, stow links the whole directory
-# into this repo, and whatever `systemctl --user enable/edit` writes there then
-# lands in this public checkout (and its untracked files stop the auto-sync). The
-# systemd, environment.d and user-tmpfiles config is Linux-only, so other systems
-# skip it.
+# into this repo, and whatever the agent CLIs or `systemctl --user enable/edit`
+# write there then lands in this public checkout (and its untracked files stop
+# the auto-sync). The systemd, environment.d and user-tmpfiles config is
+# Linux-only, so other systems skip it.
 _dotfiles_stow() {
   _dotfiles_unfold
   ( cd "$DOTFILES_DIR" || exit 1
+    for d in $(_dotfiles_real_dirs); do mkdir -p "$HOME/$d"; done
     case "$(uname -s)" in
       Linux)
-        for d in $(_dotfiles_real_dirs); do mkdir -p "$HOME/$d"; done
-        stow --restow "$@" .
+        stow --restow --target="$HOME" "$@" .
         ;;
       *)
-        stow --restow --ignore='\.config/systemd' --ignore='\.config/environment\.d' \
+        stow --restow --target="$HOME" --ignore='\.config/systemd' --ignore='\.config/environment\.d' \
           --ignore='\.config/user-tmpfiles\.d' "$@" .
         ;;
     esac
   )
 }
 
-# The directories, relative to $HOME, that must not be stow-folded. Besides the
-# three above, that is every unit drop-in directory here (t3code-.scope.d, ...):
+# The directories, relative to $HOME, that must not be stow-folded. The agent
+# CLIs keep auth tokens, session logs and caches in theirs. On Linux, add the
+# three above and every unit drop-in directory here (t3code-.scope.d, ...):
 # systemd silently ignores a drop-in directory that is a *relative* symlink,
 # which is what stow makes, while a real directory holding stow's relative file
 # links works. Parents come first.
 _dotfiles_real_dirs() {
+  echo .claude
+  echo .codex
+  echo .codex/skills
+  echo .copilot
+  echo .gemini
+  echo .gemini/config
+  [ "$(uname -s)" = Linux ] || return 0
   echo .config/systemd
   echo .config/systemd/user
   echo .config/environment.d

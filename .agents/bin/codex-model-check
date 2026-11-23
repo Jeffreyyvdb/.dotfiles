@@ -9,7 +9,8 @@ behind a release. It prints nothing and exits 0 when every id is current, and
 exits 1 when it found a stale one.
 
 Usage: codex-model-check [file ...]
-With no files it checks ~/.codex/pstack-models.md and ~/.agents/AGENTS.local.md.
+With no files it checks ~/.codex/pstack-models.md, ~/.agents/AGENTS.md and
+~/.agents/AGENTS.local.md.
 Set CODEX_MODELS_CACHE to read another cache file.
 """
 import json
@@ -47,7 +48,11 @@ def main(argv):
         print(f"codex-model-check: no Codex models cache at {cache}; run codex once", file=sys.stderr)
         return 0
     newest = newest_per_family(cache)
-    files = argv or [f"{HOME}/.codex/pstack-models.md", f"{HOME}/.agents/AGENTS.local.md"]
+    files = argv or [
+        f"{HOME}/.codex/pstack-models.md",
+        f"{HOME}/.agents/AGENTS.md",
+        f"{HOME}/.agents/AGENTS.local.md",
+    ]
     stale = 0
     for path in files:
         if not os.path.exists(path):
