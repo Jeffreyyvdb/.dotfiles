@@ -16,3 +16,9 @@ export PATH="$HOME/.aspire/bin:$PATH"
 # <dir>/.github/instructions/ for each dir listed here, so each machine with an
 # ~/.agents/AGENTS.local.md links it in (see CLAUDE.md, "Global agent instructions").
 export COPILOT_CUSTOM_INSTRUCTIONS_DIRS="$HOME/.agents"
+
+# T3 Code: opt out of product analytics (PostHog) and relay tracing, and keep
+# the OpenTelemetry SDK from exporting anything. The desktop app reads
+# T3CODE_TELEMETRY_ENABLED from the login shell at startup.
+export T3CODE_TELEMETRY_ENABLED=false
+export T3CODE_OTEL_SDK_DISABLED=true
